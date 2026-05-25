@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { resolveCandidatePowerDependency } from "../lib/power/dependencyResolver";
 import { makeFeature, fc, pt, line } from "./fixtures";
+import { haversineKm } from "../lib/geo/distance";
 import type { CampusSizeMW, DataCenterScenario } from "../types/scenario";
 
 const CAMPUS: [number, number] = [0, 0];
@@ -103,25 +104,57 @@ describe("resolveCandidatePowerDependency", () => {
     expect(dep.reasonCodes).toContain("transmission_substation_tag_present");
   });
 
-  it("derives load class and likely requirement from campus size", () => {
-    const sub = makeFeature({ id: "s", geometry: pt(0, 0.01), voltage: "115000" });
+  it("picks the NEAREST substation among several (not just substation-over-line)", () => {
+    const near = makeFeature({ id: "sub/near", geometry: pt(0, 0.01), voltage: "115000" });
+    const mid = makeFeature({ id: "sub/mid", geometry: pt(0, 0.5), voltage: "115000" });
+    const far = makeFeature({ id: "sub/far", geometry: pt(0, 2), voltage: "115000" });
     const dep = resolveCandidatePowerDependency({
-      scenario: scenario(500),
-      substations: fc([sub]),
+      scenario: scenario(100),
+      substations: fc([far, mid, near]), // deliberately not in nearest-first order
       transmissionLines: fc([]),
     })!;
-    expect(dep.loadClass).toBe("extreme");
-    expect(dep.likelyRequirement).toMatch(/Hyperscale/);
+    expect(dep.featureId).toBe("sub/near");
   });
 
-  it("rounds distance to at most 3 decimals", () => {
+  it("runs all four MW sizes through the resolver: load class, requirement, escalated warnings", () => {
+    const sub = makeFeature({ id: "s", geometry: pt(0, 0.01), voltage: "115000" });
+    const base = { substations: fc([sub]), transmissionLines: fc([]) };
+    const cases: {
+      mw: CampusSizeMW;
+      loadClass: string;
+      requirement: RegExp;
+      veryLarge: boolean;
+      hyperscale: boolean;
+    }[] = [
+      { mw: 50, loadClass: "moderate", requirement: /interconnection study/, veryLarge: false, hyperscale: false },
+      { mw: 100, loadClass: "large", requirement: /Dedicated utility planning/, veryLarge: false, hyperscale: false },
+      { mw: 250, loadClass: "very_large", requirement: /grid upgrade/, veryLarge: true, hyperscale: false },
+      { mw: 500, loadClass: "extreme", requirement: /Hyperscale/, veryLarge: true, hyperscale: true },
+    ];
+    for (const c of cases) {
+      const dep = resolveCandidatePowerDependency({ scenario: scenario(c.mw), ...base })!;
+      expect(dep.loadClass, `loadClass @ ${c.mw}MW`).toBe(c.loadClass);
+      expect(dep.likelyRequirement, `requirement @ ${c.mw}MW`).toMatch(c.requirement);
+      // Escalated warnings must appear in the resolver's RETURNED warnings array.
+      expect(
+        dep.warnings.some((w) => w.includes("very large load class")),
+        `very-large warning @ ${c.mw}MW`,
+      ).toBe(c.veryLarge);
+      expect(
+        dep.warnings.some((w) => w.includes("hyperscale load")),
+        `hyperscale warning @ ${c.mw}MW`,
+      ).toBe(c.hyperscale);
+    }
+  });
+
+  it("rounds distance to exactly 3 decimals, matching the centroid-based haversine", () => {
     const sub = makeFeature({ id: "s", geometry: pt(0, 0.01), voltage: "1" });
     const dep = resolveCandidatePowerDependency({
       scenario: scenario(50),
       substations: fc([sub]),
       transmissionLines: fc([]),
     })!;
-    const decimals = (dep.distanceKm.toString().split(".")[1] ?? "").length;
-    expect(decimals).toBeLessThanOrEqual(3);
+    const expected = Math.round(haversineKm([0, 0], [0, 0.01]) * 1000) / 1000;
+    expect(dep.distanceKm).toBe(expected);
   });
 });

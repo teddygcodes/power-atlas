@@ -1,0 +1,406 @@
+{
+  "substations": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "MultiPolygon",
+          "coordinates": [
+            [
+              [
+                [
+                  -84.4637281,
+                  33.6770907
+                ],
+                [
+                  -84.4619746,
+                  33.6759685
+                ],
+                [
+                  -84.4614319,
+                  33.676626
+                ],
+                [
+                  -84.4617357,
+                  33.6768072
+                ],
+                [
+                  -84.461887,
+                  33.676668
+                ],
+                [
+                  -84.4621268,
+                  33.6768174
+                ],
+                [
+                  -84.4620911,
+                  33.6768788
+                ],
+                [
+                  -84.462952,
+                  33.6775901
+                ],
+                [
+                  -84.4634673,
+                  33.6772636
+                ],
+                [
+                  -84.4637232,
+                  33.6771838
+                ],
+                [
+                  -84.4637281,
+                  33.6770907
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  -84.4645,
+                  33.6756495
+                ],
+                [
+                  -84.4636516,
+                  33.6751096
+                ],
+                [
+                  -84.4629543,
+                  33.6754699
+                ],
+                [
+                  -84.4624623,
+                  33.67565
+                ],
+                [
+                  -84.4623295,
+                  33.6757933
+                ],
+                [
+                  -84.462466,
+                  33.6760676
+                ],
+                [
+                  -84.463702,
+                  33.6768505
+                ],
+                [
+                  -84.4640857,
+                  33.6764422
+                ],
+                [
+                  -84.4642247,
+                  33.6760686
+                ],
+                [
+                  -84.4645,
+                  33.6756495
+                ]
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "id": "relation/14128477",
+          "type": "substation",
+          "name": "East Point Primary Substation",
+          "voltage": "230000",
+          "substationType": "transmission",
+          "source": "osm",
+          "sourceUrl": "https://www.openstreetmap.org/",
+          "sourceConfidence": "community",
+          "lastSyncedAt": "2026-05-25T03:08:26.203Z",
+          "bbox": [
+            33.4,
+            -84.8,
+            34.3,
+            -83.8
+          ],
+          "osmId": "relation/14128477",
+          "rawTags": {
+            "name": "East Point Primary Substation",
+            "operator": "Georgia Power",
+            "operator:wikidata": "Q5547666",
+            "power": "substation",
+            "substation": "transmission",
+            "type": "multipolygon",
+            "voltage": "230000"
+          },
+          "capacityStatus": "unknown"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -84.2722999,
+                33.7903738
+              ],
+              [
+                -84.2707457,
+                33.7907125
+              ],
+              [
+                -84.2710272,
+                33.7915674
+              ],
+              [
+                -84.2718678,
+                33.7913427
+              ],
+              [
+                -84.2719473,
+                33.7913214
+              ],
+              [
+                -84.2725743,
+                33.7912003
+              ],
+              [
+                -84.2726094,
+                33.7910142
+              ],
+              [
+                -84.2725393,
+                33.7908474
+              ],
+              [
+                -84.2722999,
+                33.7903738
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "id": "way/34771030",
+          "type": "substation",
+          "voltage": "230000",
+          "substationType": "transmission",
+          "source": "osm",
+          "sourceUrl": "https://www.openstreetmap.org/",
+          "sourceConfidence": "community",
+          "lastSyncedAt": "2026-05-25T03:08:26.203Z",
+          "bbox": [
+            33.4,
+            -84.8,
+            34.3,
+            -83.8
+          ],
+          "osmId": "way/34771030",
+          "rawTags": {
+            "operator": "Georgia Power",
+            "operator:wikidata": "Q5547666",
+            "power": "substation",
+            "substation": "transmission",
+            "voltage": "230000"
+          },
+          "capacityStatus": "unknown"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                -84.3729329,
+                34.0131478
+              ],
+              [
+                -84.3729733,
+                34.0129867
+              ],
+              [
+                -84.3728857,
+                34.0128181
+              ],
+              [
+                -84.3728623,
+                34.012808
+              ],
+              [
+                -84.3727033,
+                34.0125304
+              ],
+              [
+                -84.3725411,
+                34.0126024
+              ],
+              [
+                -84.3725169,
+                34.0125867
+              ],
+              [
+                -84.3724874,
+                34.012564
+              ],
+              [
+                -84.3722802,
+                34.0127152
+              ],
+              [
+                -84.3720031,
+                34.0128249
+              ],
+              [
+                -84.3722823,
+                34.0133461
+              ],
+              [
+                -84.3724693,
+                34.0132833
+              ],
+              [
+                -84.3725163,
+                34.0132905
+              ],
+              [
+                -84.3729329,
+                34.0131478
+              ]
+            ]
+          ]
+        },
+        "properties": {
+          "id": "way/34832866",
+          "type": "substation",
+          "voltage": "115000",
+          "substationType": "distribution",
+          "source": "osm",
+          "sourceUrl": "https://www.openstreetmap.org/",
+          "sourceConfidence": "community",
+          "lastSyncedAt": "2026-05-25T03:08:26.203Z",
+          "bbox": [
+            33.4,
+            -84.8,
+            34.3,
+            -83.8
+          ],
+          "osmId": "way/34832866",
+          "rawTags": {
+            "barrier": "fence",
+            "operator": "Georgia Power",
+            "operator:wikidata": "Q5547666",
+            "power": "substation",
+            "substation": "distribution",
+            "voltage": "115000"
+          },
+          "capacityStatus": "unknown"
+        }
+      }
+    ]
+  },
+  "transmissionLines": {
+    "type": "FeatureCollection",
+    "features": [
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -84.3794799,
+              33.9662938
+            ],
+            [
+              -84.3797274,
+              33.9663903
+            ],
+            [
+              -84.3794516,
+              33.9670076
+            ],
+            [
+              -84.3805599,
+              33.9674909
+            ]
+          ]
+        },
+        "properties": {
+          "id": "way/144840196",
+          "type": "transmission_line",
+          "voltage": "230000",
+          "source": "osm",
+          "sourceUrl": "https://www.openstreetmap.org/",
+          "sourceConfidence": "community",
+          "lastSyncedAt": "2026-05-25T03:08:26.203Z",
+          "bbox": [
+            33.4,
+            -84.8,
+            34.3,
+            -83.8
+          ],
+          "osmId": "way/144840196",
+          "rawTags": {
+            "cables": "3",
+            "circuits": "1",
+            "frequency": "60",
+            "operator": "Georgia Power",
+            "operator:wikidata": "Q5547666",
+            "power": "line",
+            "voltage": "230000"
+          },
+          "capacityStatus": "unknown"
+        }
+      },
+      {
+        "type": "Feature",
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -84.5717058,
+              33.9939862
+            ],
+            [
+              -84.5726334,
+              33.9943543
+            ],
+            [
+              -84.5755279,
+              33.9941724
+            ],
+            [
+              -84.580427,
+              33.9942346
+            ]
+          ]
+        },
+        "properties": {
+          "id": "way/159758312",
+          "type": "transmission_line",
+          "name": "Bowen - Big Shanty 500kV #2",
+          "voltage": "500000",
+          "source": "osm",
+          "sourceUrl": "https://www.openstreetmap.org/",
+          "sourceConfidence": "community",
+          "lastSyncedAt": "2026-05-25T03:08:26.203Z",
+          "bbox": [
+            33.4,
+            -84.8,
+            34.3,
+            -83.8
+          ],
+          "osmId": "way/159758312",
+          "rawTags": {
+            "cables": "3",
+            "circuits": "1",
+            "frequency": "60",
+            "line": "substation",
+            "name": "Bowen - Big Shanty 500kV #2",
+            "operator": "Georgia Power",
+            "operator:wikidata": "Q5547666",
+            "power": "line",
+            "voltage": "500000"
+          },
+          "capacityStatus": "unknown"
+        }
+      }
+    ]
+  }
+}
