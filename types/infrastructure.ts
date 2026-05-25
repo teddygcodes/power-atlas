@@ -15,7 +15,7 @@ export type PowerFeatureType =
 export type CapacityStatus = "unknown" | "not_claimed";
 
 export interface SourceMetadata {
-  source: "osm" | "manual" | "derived";
+  source: "osm" | "manual" | "derived" | "fema";
   sourceUrl?: string;
   sourceConfidence: SourceConfidence;
   lastSyncedAt: string;

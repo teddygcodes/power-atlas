@@ -18,4 +18,9 @@ export interface SourceManifest {
   waterFeatureCount?: number;
   waterWarnings?: string[];
   waterLimitations?: string[];
+  // Flood layer (v0.4) — FEMA NFHL, merged by the flood ingest. floodZoneCount 0
+  // means an honest-empty layer ("no flood data loaded").
+  floodZoneCount?: number;
+  floodWarnings?: string[];
+  floodLimitations?: string[];
 }

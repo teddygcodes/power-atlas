@@ -37,5 +37,17 @@
     "Water type classing (major river / reservoir / minor stream) is coarse and estimated.",
     "Actual water demand depends on cooling design, which is not modeled in v0.2.",
     "Geometry is simplified for rendering and is not survey-accurate; analysis uses the full-resolution representative coordinate."
+  ],
+  "floodZoneCount": 824,
+  "floodWarnings": [
+    "Flood zones are statically cached FEMA NFHL data, not current or authoritative.",
+    "Verify against the official FEMA Flood Map Service Center (msc.fema.gov) before any siting decision.",
+    "Absence of a mapped flood zone is not proof of no risk; cached data may be incomplete."
+  ],
+  "floodLimitations": [
+    "Flood coverage is a focused sub-area (Atlanta corridor) of the region bbox, not the full region.",
+    "Only Special Flood Hazard Area (high-risk) zones are loaded; minimal-risk X areas are excluded, so points outside an SFHA resolve as 'no mapped flood zone'.",
+    "Zone severity is qualitative, from the FEMA zone class only — no probabilities or base-flood elevations.",
+    "Flood is a site-risk constraint; it is not combined with power / water / cooling in v0.4."
   ]
 }

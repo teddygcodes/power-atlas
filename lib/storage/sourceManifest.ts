@@ -68,3 +68,34 @@ export function applyWaterToManifest(
     waterLimitations: [...DEFAULT_WATER_LIMITATIONS],
   };
 }
+
+// Flood honesty warnings — the cached/not-authoritative + verify-with-MSC lines
+// are mandatory; absence-isn't-proof guards the "no mapped zone" case.
+export const REQUIRED_FLOOD_WARNINGS = [
+  "Flood zones are statically cached FEMA NFHL data, not current or authoritative.",
+  "Verify against the official FEMA Flood Map Service Center (msc.fema.gov) before any siting decision.",
+  "Absence of a mapped flood zone is not proof of no risk; cached data may be incomplete.",
+] as const;
+
+const DEFAULT_FLOOD_LIMITATIONS = [
+  "Flood coverage is a focused sub-area (Atlanta corridor) of the region bbox, not the full region.",
+  "Only Special Flood Hazard Area (high-risk) zones are loaded; minimal-risk X areas are excluded, so points outside an SFHA resolve as 'no mapped flood zone'.",
+  "Zone severity is qualitative, from the FEMA zone class only — no probabilities or base-flood elevations.",
+  "Flood is a site-risk constraint; it is not combined with power / water / cooling in v0.4.",
+] as const;
+
+// Merge flood fields. floodZoneCount 0 → honest-empty (no flood data loaded).
+export function applyFloodToManifest(
+  manifest: SourceManifest,
+  floodZoneCount: number,
+): SourceManifest {
+  return {
+    ...manifest,
+    floodZoneCount,
+    floodWarnings: [...REQUIRED_FLOOD_WARNINGS],
+    floodLimitations:
+      floodZoneCount > 0
+        ? [...DEFAULT_FLOOD_LIMITATIONS]
+        : ["No flood data loaded for this region (honest-empty); the flood layer renders nothing."],
+  };
+}

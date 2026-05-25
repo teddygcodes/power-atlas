@@ -28,6 +28,7 @@ const config: Config = {
           candidate: "#ff6b5e",
           water: "#4aa3e0",
           waterCandidate: "#7fd2ff",
+          flood: "#d14b4b",
         },
       },
       fontFamily: {

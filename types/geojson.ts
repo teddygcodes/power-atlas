@@ -1,5 +1,6 @@
 import type { PowerFeatureProperties } from "./infrastructure";
 import type { WaterFeatureProperties } from "./water";
+import type { FloodFeatureProperties } from "./flood";
 
 // Minimal GeoJSON geometry typing — enough for power features without a
 // dependency on @types/geojson. Coordinates are [lng, lat] tuples.
@@ -61,5 +62,21 @@ export interface WaterFeatureCollection {
 }
 
 export function emptyWaterFeatureCollection(): WaterFeatureCollection {
+  return { type: "FeatureCollection", features: [] };
+}
+
+// Flood-zone features (FEMA NFHL) reuse the same geometry union.
+export interface FloodFeature {
+  type: "Feature";
+  geometry: PowerGeometry;
+  properties: FloodFeatureProperties;
+}
+
+export interface FloodFeatureCollection {
+  type: "FeatureCollection";
+  features: FloodFeature[];
+}
+
+export function emptyFloodFeatureCollection(): FloodFeatureCollection {
   return { type: "FeatureCollection", features: [] };
 }

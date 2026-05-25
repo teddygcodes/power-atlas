@@ -10,6 +10,7 @@ import type {
   PowerFeatureCollection,
   PowerFeature,
   WaterFeatureCollection,
+  FloodFeatureCollection,
 } from "../../types/geojson";
 import type { CampusSizeMW } from "../../types/scenario";
 import type { CandidatePowerDependency } from "../../types/dependency";
@@ -19,6 +20,7 @@ import {
   type LayerVisibility,
 } from "./PowerInfrastructureLayer";
 import { buildWaterLayers } from "./WaterInfrastructureLayer";
+import { buildFloodLayers } from "./FloodLayer";
 import { buildCampusLayer } from "./CampusMarker";
 import { buildCandidatePathLayer } from "./CandidatePowerPath";
 import { buildCandidateWaterPath } from "./CandidateWaterPath";
@@ -72,6 +74,7 @@ export default function PowerAtlasMap({
   transmissionLines,
   powerPlants,
   water,
+  floodZones,
   campus,
   campusSizeMW,
   dependency,
@@ -83,6 +86,7 @@ export default function PowerAtlasMap({
   transmissionLines: PowerFeatureCollection;
   powerPlants: PowerFeatureCollection;
   water: WaterFeatureCollection;
+  floodZones: FloodFeatureCollection;
   campus: [number, number];
   campusSizeMW: CampusSizeMW;
   dependency: CandidatePowerDependency | null;
@@ -91,12 +95,13 @@ export default function PowerAtlasMap({
   onPickCampus: (coords: [number, number]) => void;
 }) {
   const layers = useMemo<Layer[]>(() => {
-    // Water underneath power infrastructure.
+    // Water + flood (area layers) underneath the point/line infrastructure.
     const ls: Layer[] = buildWaterLayers({
       water,
       visible: visibility.water,
       candidateFeatureId: waterDependency?.featureId,
     });
+    ls.push(...buildFloodLayers({ flood: floodZones, visible: visibility.flood }));
     ls.push(
       ...buildInfrastructureLayers({
         substations,
@@ -131,6 +136,7 @@ export default function PowerAtlasMap({
     transmissionLines,
     powerPlants,
     water,
+    floodZones,
     visibility,
     dependency,
     waterDependency,

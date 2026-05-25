@@ -22,6 +22,7 @@ export interface LayerVisibility {
   candidatePath: boolean;
   water: boolean;
   waterPath: boolean;
+  flood: boolean;
 }
 
 interface PointDatum {

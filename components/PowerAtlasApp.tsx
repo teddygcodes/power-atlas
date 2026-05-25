@@ -4,18 +4,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
-import type { PowerFeatureCollection, WaterFeatureCollection } from "../types/geojson";
-import { emptyFeatureCollection, emptyWaterFeatureCollection } from "../types/geojson";
+import type {
+  PowerFeatureCollection,
+  WaterFeatureCollection,
+  FloodFeatureCollection,
+} from "../types/geojson";
+import {
+  emptyFeatureCollection,
+  emptyWaterFeatureCollection,
+  emptyFloodFeatureCollection,
+} from "../types/geojson";
 import type { CampusSizeMW, CoolingType } from "../types/scenario";
 import { fetchFeatureCollection } from "../lib/geo/geojson";
 import { resolveCandidatePowerDependency } from "../lib/power/dependencyResolver";
 import { resolveCandidateWaterDependency } from "../lib/water/waterResolver";
+import { resolveCampusFloodRisk } from "../lib/flood/floodResolver";
 import type { LayerVisibility } from "./map/PowerInfrastructureLayer";
 import { LayerTogglePanel } from "./map/LayerTogglePanel";
 import { ScenarioPanel } from "./power/ScenarioPanel";
 import { PowerHUD } from "./power/PowerHUD";
 import { DependencyWarnings } from "./power/DependencyWarnings";
 import { WaterHUD } from "./water/WaterHUD";
+import { FloodHUD } from "./flood/FloodHUD";
 
 // Map is WebGL/maplibre — render client-only to avoid SSR window access.
 const PowerAtlasMap = dynamic(() => import("./map/PowerAtlasMap"), {
@@ -35,6 +45,7 @@ interface Collections {
   transmissionLines?: PowerFeatureCollection;
   powerPlants?: PowerFeatureCollection;
   water?: WaterFeatureCollection;
+  flood?: FloodFeatureCollection;
 }
 
 export function PowerAtlasApp() {
@@ -46,9 +57,10 @@ export function PowerAtlasApp() {
     transmission: true,
     plants: false,
     candidatePath: true,
-    // Water defaults OFF; its ~10 MB GeoJSON is fetched lazily on first toggle-on.
+    // Water + flood default OFF; their GeoJSON is fetched lazily on first toggle-on.
     water: false,
     waterPath: false,
+    flood: false,
   });
   const [data, setData] = useState<Collections>({});
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +96,14 @@ export function PowerAtlasApp() {
         )
         .catch((e) => console.error("water load failed", e));
     }
+    if (visibility.flood && !seen.has("flood")) {
+      seen.add("flood");
+      fetchFeatureCollection(`${base}/flood-zones.geojson`)
+        .then((fc) =>
+          setData((d) => ({ ...d, flood: fc as unknown as FloodFeatureCollection })),
+        )
+        .catch((e) => console.error("flood load failed", e));
+    }
   }, [visibility]);
 
   // One scenario feeds both resolvers. coolingType refines WATER demand only —
@@ -106,6 +126,13 @@ export function PowerAtlasApp() {
     if (!data.water) return null;
     return resolveCandidateWaterDependency({ scenario, waterFeatures: data.water });
   }, [data.water, scenario]);
+
+  // Flood is a site-risk constraint resolved from the campus coordinate. It does
+  // NOT interact with power / water / cooling in v0.4.
+  const floodRisk = useMemo(() => {
+    if (!data.flood) return null;
+    return resolveCampusFloodRisk({ scenario, floodZones: data.flood });
+  }, [data.flood, scenario]);
 
   const toggleLayer = useCallback((key: keyof LayerVisibility) => {
     setVisibility((v) => ({ ...v, [key]: !v[key] }));
@@ -173,6 +200,7 @@ export function PowerAtlasApp() {
               transmissionLines={data.transmissionLines}
               powerPlants={data.powerPlants ?? emptyFeatureCollection()}
               water={data.water ?? emptyWaterFeatureCollection()}
+              floodZones={data.flood ?? emptyFloodFeatureCollection()}
               campus={campus}
               campusSizeMW={campusSizeMW}
               dependency={dependency}
@@ -191,6 +219,7 @@ export function PowerAtlasApp() {
           <PowerHUD dependency={dependency} campusSizeMW={campusSizeMW} />
           {dependency && <DependencyWarnings warnings={dependency.warnings} />}
           <WaterHUD dependency={waterDependency} coolingType={coolingType} />
+          <FloodHUD risk={floodRisk} />
         </aside>
       </div>
     </div>
