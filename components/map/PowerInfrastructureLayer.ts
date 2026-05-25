@@ -5,7 +5,7 @@ import type {
   PowerFeatureCollection,
   Position,
 } from "../../types/geojson";
-import { getRepresentativeCoordinate } from "../../lib/geo/centroid";
+import { representativeCoordinate } from "../../lib/geo/centroid";
 
 // RGB(A) mirrors of the tailwind `signal.*` palette (0–255).
 export const COLORS = {
@@ -37,7 +37,7 @@ interface PathDatum {
 function toPoints(fc: PowerFeatureCollection): PointDatum[] {
   const out: PointDatum[] = [];
   for (const feature of fc.features) {
-    const position = getRepresentativeCoordinate(feature);
+    const position = representativeCoordinate(feature);
     if (position) out.push({ position, feature });
   }
   return out;

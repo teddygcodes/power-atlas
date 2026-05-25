@@ -1,7 +1,7 @@
 import type { PowerFeature, PowerFeatureCollection } from "../../types/geojson";
 import type { DataCenterScenario } from "../../types/scenario";
 import type { CandidatePowerDependency } from "../../types/dependency";
-import { getRepresentativeCoordinate } from "../geo/centroid";
+import { representativeCoordinate } from "../geo/centroid";
 import { haversineKm } from "../geo/distance";
 import { nearestFeature } from "../geo/nearest";
 import { getLoadClass, getLikelyRequirement } from "./loadClasses";
@@ -43,7 +43,7 @@ export function resolveCandidatePowerDependency(
   // Rank substations: tier (plausible > unknown > low-for-load), then distance.
   const ranked: RankedCandidate[] = [];
   for (const feature of substations.features) {
-    const coordinates = getRepresentativeCoordinate(feature);
+    const coordinates = representativeCoordinate(feature);
     if (!coordinates) continue;
     const voltageClass = classifyVoltage(feature.properties.voltage);
     const tier =

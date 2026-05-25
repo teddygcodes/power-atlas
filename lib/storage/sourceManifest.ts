@@ -13,6 +13,7 @@ const DEFAULT_LIMITATIONS = [
   "Voltage values are raw OSM tag strings and may be missing, unit-inconsistent (e.g. 115000 vs 115kV), or multi-valued (semicolon-delimited).",
   "Power plants and generators are shown for context only and are not used in dependency resolution.",
   "Coverage is limited to the queried bounding box; infrastructure outside it is not represented.",
+  "Geometry is simplified for rendering and is not survey-accurate; analysis uses the full-resolution representative coordinate.",
 ] as const;
 
 export function buildSourceManifest(params: {
@@ -52,6 +53,7 @@ const DEFAULT_WATER_LIMITATIONS = [
   "Only named water features are ingested; unnamed ponds and drainage ditches are excluded.",
   "Water type classing (major river / reservoir / minor stream) is coarse and estimated.",
   "Actual water demand depends on cooling design, which is not modeled in v0.2.",
+  "Geometry is simplified for rendering and is not survey-accurate; analysis uses the full-resolution representative coordinate.",
 ] as const;
 
 // Merge water fields into an existing manifest (idempotent — safe to re-run).

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { resolveCandidatePowerDependency } from "../lib/power/dependencyResolver";
-import { getRepresentativeCoordinate } from "../lib/geo/centroid";
+import { getRepresentativeCoordinate, representativeCoordinate } from "../lib/geo/centroid";
 import { haversineKm } from "../lib/geo/distance";
 import { emptyFeatureCollection } from "../types/geojson";
 import type { PowerFeature, PowerFeatureCollection, Position } from "../types/geojson";
@@ -60,7 +60,7 @@ describe("resolver against REAL georgia-demo features", () => {
     const target = byOsmId("way/34771030"); // real Polygon, 9 vertices, voltage 230000
     expect(target.geometry.type).toBe("Polygon");
 
-    const centroid = getRepresentativeCoordinate(target)!;
+    const centroid = representativeCoordinate(target)!;
     // Centroid of the real irregular ring sits inside the polygon.
     expect(pointInRing(centroid, exteriorRing(target))).toBe(true);
 
@@ -85,7 +85,7 @@ describe("resolver against REAL georgia-demo features", () => {
 
   it("measures distance from the centroid, NOT a boundary vertex", () => {
     const target = byOsmId("way/34771030");
-    const centroid = getRepresentativeCoordinate(target)!;
+    const centroid = representativeCoordinate(target)!;
     const campus: [number, number] = [centroid[0] + 0.003, centroid[1] + 0.003];
     const firstVertex = exteriorRing(target)[0] as [number, number];
 
@@ -107,7 +107,7 @@ describe("resolver against REAL georgia-demo features", () => {
     const target = byOsmId("relation/14128477"); // real MultiPolygon
     expect(target.geometry.type).toBe("MultiPolygon");
 
-    const centroid = getRepresentativeCoordinate(target)!;
+    const centroid = representativeCoordinate(target)!;
     const campus: [number, number] = [centroid[0] + 0.002, centroid[1] + 0.002];
 
     const dep = resolveCandidatePowerDependency({
@@ -123,7 +123,7 @@ describe("resolver against REAL georgia-demo features", () => {
 
   it("falls back to the nearest real transmission line when no substations exist", () => {
     const line = transmissionLines.features[0];
-    const lineCoord = getRepresentativeCoordinate(line)!;
+    const lineCoord = representativeCoordinate(line)!;
     const campus: [number, number] = [lineCoord[0] + 0.002, lineCoord[1] + 0.002];
 
     const dep = resolveCandidatePowerDependency({
@@ -149,7 +149,7 @@ describe("voltage-class plausibility on REAL features", () => {
   it("a 500 MW load prefers the real 230 kV substation over a CLOSER 115 kV one", () => {
     // Campus sits right next to the 115 kV substation; the nearest 230 kV one is
     // ~26 km away. Distance alone would pick the 115 kV; voltage plausibility wins.
-    const c115 = getRepresentativeCoordinate(sub115)!;
+    const c115 = representativeCoordinate(sub115)!;
     const campus: [number, number] = [c115[0] + 0.002, c115[1] + 0.002];
 
     const dep = resolveCandidatePowerDependency({
@@ -167,7 +167,7 @@ describe("voltage-class plausibility on REAL features", () => {
   it("at 50 MW the same campus picks the CLOSER 115 kV substation (it's plausible there)", () => {
     // At 50 MW, sub_transmission (115 kV) is plausible, so distance decides and
     // the nearby 115 kV substation wins — confirms the heuristic is load-aware.
-    const c115 = getRepresentativeCoordinate(sub115)!;
+    const c115 = representativeCoordinate(sub115)!;
     const campus: [number, number] = [c115[0] + 0.002, c115[1] + 0.002];
 
     const dep = resolveCandidatePowerDependency({
@@ -181,7 +181,7 @@ describe("voltage-class plausibility on REAL features", () => {
   });
 
   it("low_for_load: a 500 MW load with ONLY the 115 kV substation returns it, flagged", () => {
-    const c115 = getRepresentativeCoordinate(sub115)!;
+    const c115 = representativeCoordinate(sub115)!;
     const campus: [number, number] = [c115[0] + 0.002, c115[1] + 0.002];
 
     const dep = resolveCandidatePowerDependency({
@@ -204,7 +204,7 @@ describe("voltage-class plausibility on REAL features", () => {
       ...sub230,
       properties: { ...sub230.properties, voltage: undefined },
     };
-    const c = getRepresentativeCoordinate(noVoltage)!;
+    const c = representativeCoordinate(noVoltage)!;
     const campus: [number, number] = [c[0] + 0.002, c[1] + 0.002];
 
     const dep = resolveCandidatePowerDependency({
@@ -221,7 +221,7 @@ describe("voltage-class plausibility on REAL features", () => {
   it("tier order: unknown-voltage outranks a same-distance low-for-load substation", () => {
     // Both placed equally near the campus; at 500 MW the 115 kV is low-for-load
     // while the tag-stripped one is a data gap — the data gap ranks higher.
-    const c115 = getRepresentativeCoordinate(sub115)!;
+    const c115 = representativeCoordinate(sub115)!;
     const campus: [number, number] = [c115[0] + 0.001, c115[1] + 0.001];
     const unknownAtSamePlace: PowerFeature = {
       ...sub115,

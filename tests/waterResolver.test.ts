@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { resolveCandidateWaterDependency } from "../lib/water/waterResolver";
-import { getRepresentativeCoordinate } from "../lib/geo/centroid";
+import { getRepresentativeCoordinate, representativeCoordinate } from "../lib/geo/centroid";
 import { emptyWaterFeatureCollection } from "../types/geojson";
 import type { WaterFeature, WaterFeatureCollection } from "../types/geojson";
 import type { CampusSizeMW, DataCenterScenario } from "../types/scenario";
@@ -27,7 +27,7 @@ const river = byId("way/484301357"); // Chattahoochee River (major_river)
 const lake = byId("way/33276079"); // Cadence Lake (reservoir polygon)
 
 // Campus right next to the stream; the river is ~11 km away, the lake ~14 km.
-const streamCoord = getRepresentativeCoordinate(stream)!;
+const streamCoord = representativeCoordinate(stream)!;
 const campusByStream: [number, number] = [streamCoord[0] + 0.002, streamCoord[1] + 0.002];
 
 describe("water resolver against REAL georgia-demo features", () => {
@@ -62,7 +62,7 @@ describe("water resolver against REAL georgia-demo features", () => {
   });
 
   it("resolves a reservoir polygon via its centroid", () => {
-    const lakeCoord = getRepresentativeCoordinate(lake)!;
+    const lakeCoord = representativeCoordinate(lake)!;
     const campus: [number, number] = [lakeCoord[0] + 0.002, lakeCoord[1] + 0.002];
     const dep = resolveCandidateWaterDependency({
       scenario: scenario(50, campus),
@@ -72,12 +72,19 @@ describe("water resolver against REAL georgia-demo features", () => {
     expect(dep.candidateCoordinates).toEqual(lakeCoord);
   });
 
-  it("resolves a river via its line midpoint (not a polygon centroid)", () => {
+  it("reads the stored full-res repCoord, NOT the simplified line geometry (river)", () => {
+    // The committed river geometry is Douglas-Peucker simplified, so its index
+    // midpoint moved. The resolver must return the stored full-res repCoord —
+    // this is what keeps simplification from altering picks/distances.
+    const stored = representativeCoordinate(river)!;
+    const fromSimplified = getRepresentativeCoordinate(river)!;
+    expect(river.properties.repCoord).toBeDefined();
+    expect(stored).not.toEqual(fromSimplified);
     const dep = resolveCandidateWaterDependency({
       scenario: scenario(500, campusByStream),
       waterFeatures: collection([river]),
     })!;
-    expect(dep.candidateCoordinates).toEqual(getRepresentativeCoordinate(river));
+    expect(dep.candidateCoordinates).toEqual(stored);
   });
 
   it("minor-stream-only + LARGE load: returned as candidate WITH insufficiency warning, NOT excluded", () => {

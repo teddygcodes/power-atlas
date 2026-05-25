@@ -1,5 +1,5 @@
 import type { PowerGeometry } from "../../types/geojson";
-import { getRepresentativeCoordinate } from "./centroid";
+import { representativeCoordinate } from "./centroid";
 import { haversineKm } from "./distance";
 
 export interface NearestResult<T> {
@@ -17,7 +17,7 @@ export function nearestFeature<T extends { geometry: PowerGeometry }>(
 ): NearestResult<T> | null {
   let best: NearestResult<T> | null = null;
   for (const feature of features) {
-    const coordinates = getRepresentativeCoordinate(feature);
+    const coordinates = representativeCoordinate(feature);
     if (!coordinates) continue;
     const distanceKm = haversineKm(from, coordinates);
     if (best === null || distanceKm < best.distanceKm) {

@@ -71,6 +71,19 @@ function planarLength(coords: Position[]): number {
   return len;
 }
 
+// Analysis read-path: prefer the repCoord precomputed from FULL-resolution
+// geometry at ingest; fall back to computing from (possibly simplified) geometry
+// if it's absent. Resolvers/ranking use THIS, so display simplification can never
+// move the analysis point. getRepresentativeCoordinate below is the raw compute.
+export function representativeCoordinate(feature: {
+  geometry: PowerGeometry;
+  properties?: { repCoord?: [number, number] };
+}): [number, number] | null {
+  const stored = feature.properties?.repCoord;
+  if (stored) return stored;
+  return getRepresentativeCoordinate(feature);
+}
+
 // Accepts any geometry-bearing feature (power or water) — only the geometry is used.
 export function getRepresentativeCoordinate(
   feature: { geometry: PowerGeometry },

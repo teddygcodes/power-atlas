@@ -23,6 +23,8 @@ export interface WaterFeatureProperties extends SourceMetadata {
   waterType: WaterFeatureType;
   name?: string;
   capacityStatus: CapacityStatus; // hardcoded "unknown" in v0.2
+  // Representative coordinate from FULL-resolution geometry (see power props).
+  repCoord?: [number, number];
 }
 
 // Mirrors CandidatePowerDependency. Capacity is never claimed; the path and the

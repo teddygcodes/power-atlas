@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
 import type { PowerFeatureCollection, WaterFeatureCollection } from "../types/geojson";
+import { emptyFeatureCollection, emptyWaterFeatureCollection } from "../types/geojson";
 import type { CampusSizeMW } from "../types/scenario";
 import { fetchFeatureCollection } from "../lib/geo/geojson";
 import { resolveCandidatePowerDependency } from "../lib/power/dependencyResolver";
@@ -29,11 +30,11 @@ const PowerAtlasMap = dynamic(() => import("./map/PowerAtlasMap"), {
 const REGION = "georgia-demo";
 const DEFAULT_CAMPUS: [number, number] = [-84.388, 33.749];
 
-interface LoadedData {
-  substations: PowerFeatureCollection;
-  transmissionLines: PowerFeatureCollection;
-  powerPlants: PowerFeatureCollection;
-  water: WaterFeatureCollection;
+interface Collections {
+  substations?: PowerFeatureCollection;
+  transmissionLines?: PowerFeatureCollection;
+  powerPlants?: PowerFeatureCollection;
+  water?: WaterFeatureCollection;
 }
 
 export function PowerAtlasApp() {
@@ -44,53 +45,62 @@ export function PowerAtlasApp() {
     transmission: true,
     plants: false,
     candidatePath: true,
-    water: true,
-    waterPath: true,
+    // Water defaults OFF; its ~10 MB GeoJSON is fetched lazily on first toggle-on.
+    water: false,
+    waterPath: false,
   });
-  const [data, setData] = useState<LoadedData | null>(null);
+  const [data, setData] = useState<Collections>({});
   const [error, setError] = useState<string | null>(null);
+  const requested = useRef<Set<string>>(new Set());
 
+  // On-demand, cached fetch: core power loads on mount (the default primary
+  // view); power plants + water load only when their layer is first enabled.
   useEffect(() => {
-    let active = true;
     const base = `/geojson/${REGION}`;
-    Promise.all([
-      fetchFeatureCollection(`${base}/substations.geojson`),
-      fetchFeatureCollection(`${base}/transmission-lines.geojson`),
-      fetchFeatureCollection(`${base}/power-plants.geojson`),
-      fetchFeatureCollection(`${base}/water.geojson`),
-    ])
-      .then(([substations, transmissionLines, powerPlants, water]) => {
-        if (active)
-          setData({
-            substations,
-            transmissionLines,
-            powerPlants,
-            // Structurally identical FeatureCollection; properties differ.
-            water: water as unknown as WaterFeatureCollection,
-          });
-      })
-      .catch((e) => active && setError(String(e)));
-    return () => {
-      active = false;
-    };
-  }, []);
+    const seen = requested.current;
+    if (!seen.has("core")) {
+      seen.add("core");
+      Promise.all([
+        fetchFeatureCollection(`${base}/substations.geojson`),
+        fetchFeatureCollection(`${base}/transmission-lines.geojson`),
+      ])
+        .then(([substations, transmissionLines]) =>
+          setData((d) => ({ ...d, substations, transmissionLines })),
+        )
+        .catch((e) => setError(String(e)));
+    }
+    if (visibility.plants && !seen.has("plants")) {
+      seen.add("plants");
+      fetchFeatureCollection(`${base}/power-plants.geojson`)
+        .then((powerPlants) => setData((d) => ({ ...d, powerPlants })))
+        .catch((e) => console.error("power-plants load failed", e));
+    }
+    if ((visibility.water || visibility.waterPath) && !seen.has("water")) {
+      seen.add("water");
+      fetchFeatureCollection(`${base}/water.geojson`)
+        .then((fc) =>
+          setData((d) => ({ ...d, water: fc as unknown as WaterFeatureCollection })),
+        )
+        .catch((e) => console.error("water load failed", e));
+    }
+  }, [visibility]);
 
   const dependency = useMemo(() => {
-    if (!data) return null;
+    if (!data.substations || !data.transmissionLines) return null;
     return resolveCandidatePowerDependency({
       scenario: { campusSizeMW, coordinates: campus },
       substations: data.substations,
       transmissionLines: data.transmissionLines,
     });
-  }, [data, campusSizeMW, campus]);
+  }, [data.substations, data.transmissionLines, campusSizeMW, campus]);
 
   const waterDependency = useMemo(() => {
-    if (!data) return null;
+    if (!data.water) return null;
     return resolveCandidateWaterDependency({
       scenario: { campusSizeMW, coordinates: campus },
       waterFeatures: data.water,
     });
-  }, [data, campusSizeMW, campus]);
+  }, [data.water, campusSizeMW, campus]);
 
   const toggleLayer = useCallback((key: keyof LayerVisibility) => {
     setVisibility((v) => ({ ...v, [key]: !v[key] }));
@@ -150,12 +160,12 @@ export function PowerAtlasApp() {
                 </p>
               </div>
             </div>
-          ) : data ? (
+          ) : data.substations && data.transmissionLines ? (
             <PowerAtlasMap
               substations={data.substations}
               transmissionLines={data.transmissionLines}
-              powerPlants={data.powerPlants}
-              water={data.water}
+              powerPlants={data.powerPlants ?? emptyFeatureCollection()}
+              water={data.water ?? emptyWaterFeatureCollection()}
               campus={campus}
               campusSizeMW={campusSizeMW}
               dependency={dependency}

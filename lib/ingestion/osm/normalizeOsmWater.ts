@@ -3,8 +3,14 @@ import type { OverpassResponse } from "./osmTypes";
 import type { WaterFeature, WaterFeatureCollection, PowerGeometry } from "../../../types/geojson";
 import type { WaterFeatureProperties, WaterFeatureType } from "../../../types/water";
 import type { BboxSWNE } from "../../../types/ingestion";
+import { getRepresentativeCoordinate } from "../../geo/centroid";
+import { simplifyGeometry } from "../../geo/simplify";
 
 const OSM_BASE_URL = "https://www.openstreetmap.org/";
+
+// Display-geometry simplification tolerance (degrees, ~11m). Analysis uses
+// repCoord computed from full-res geometry before simplifying.
+const SIMPLIFY_EPSILON = 0.0001;
 
 export interface NormalizedWater {
   water: WaterFeatureCollection;
@@ -88,6 +94,10 @@ export function normalizeOsmWater(
     const geometry = f.geometry as unknown as PowerGeometry;
     const osmId = f.id != null ? String(f.id) : undefined;
 
+    // Compute repCoord from FULL-resolution geometry, THEN simplify for display.
+    const repCoord = getRepresentativeCoordinate({ geometry }) ?? undefined;
+    const displayGeometry = simplifyGeometry(geometry, SIMPLIFY_EPSILON);
+
     const properties: WaterFeatureProperties = {
       id: osmId ?? `${waterType}/${features.length}`,
       waterType,
@@ -100,9 +110,10 @@ export function normalizeOsmWater(
       osmId,
       rawTags: tags,
       capacityStatus: "unknown",
+      repCoord,
     };
 
-    features.push({ type: "Feature", geometry, properties });
+    features.push({ type: "Feature", geometry: displayGeometry, properties });
     counts[waterType] += 1;
   }
 

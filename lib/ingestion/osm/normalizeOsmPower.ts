@@ -10,8 +10,14 @@ import type {
   PowerFeatureType,
 } from "../../../types/infrastructure";
 import type { BboxSWNE } from "../../../types/ingestion";
+import { getRepresentativeCoordinate } from "../../geo/centroid";
+import { simplifyGeometry } from "../../geo/simplify";
 
 const OSM_BASE_URL = "https://www.openstreetmap.org/";
+
+// Display-geometry simplification tolerance (degrees, ~11m). Analysis is
+// unaffected: repCoord is computed from full-res geometry before simplifying.
+const SIMPLIFY_EPSILON = 0.0001;
 
 export interface NormalizedPower {
   substations: PowerFeatureCollection;
@@ -94,6 +100,10 @@ export function normalizeOsmPower(
 
     const osmId = f.id != null ? String(f.id) : undefined;
 
+    // Compute repCoord from FULL-resolution geometry, THEN simplify for display.
+    const repCoord = getRepresentativeCoordinate({ geometry }) ?? undefined;
+    const displayGeometry = simplifyGeometry(geometry, SIMPLIFY_EPSILON);
+
     const properties: PowerFeatureProperties = {
       id: osmId ?? `${type}/${substations.length + transmissionLines.length + powerPlants.length}`,
       type,
@@ -108,11 +118,12 @@ export function normalizeOsmPower(
       osmId,
       rawTags: tags,
       capacityStatus: "unknown",
+      repCoord,
     };
 
     const feature: PowerFeature = {
       type: "Feature",
-      geometry,
+      geometry: displayGeometry,
       properties,
     };
 

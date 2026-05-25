@@ -31,7 +31,7 @@ export function WaterHUD({
     >
       {!dependency ? (
         <p className="text-xs text-atlas-muted">
-          No candidate water source could be resolved for this location.
+          Enable the Water layer to resolve a candidate water source.
         </p>
       ) : (
         <div className="space-y-3">

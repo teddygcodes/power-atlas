@@ -31,4 +31,8 @@ export interface PowerFeatureProperties extends SourceMetadata {
   voltage?: string; // RAW OSM string, verbatim. Never parse to number.
   substationType?: string;
   capacityStatus: CapacityStatus; // hardcoded "unknown" everywhere in v0.1
+  // Representative coordinate computed from FULL-resolution geometry at ingest,
+  // before any display simplification. The resolver reads this so geometry
+  // simplification cannot move the analysis point. [lng, lat].
+  repCoord?: [number, number];
 }

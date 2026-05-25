@@ -1,7 +1,7 @@
 import type { WaterFeature, WaterFeatureCollection } from "../../types/geojson";
 import type { DataCenterScenario } from "../../types/scenario";
 import type { CandidateWaterDependency, WaterClass } from "../../types/water";
-import { getRepresentativeCoordinate } from "../geo/centroid";
+import { representativeCoordinate } from "../geo/centroid";
 import { haversineKm } from "../geo/distance";
 import { classifyWater, isPlausibleWater } from "./waterClass";
 import { buildWaterWarnings } from "./waterWarnings";
@@ -32,7 +32,7 @@ export function resolveCandidateWaterDependency(
 
   const ranked: RankedWater[] = [];
   for (const feature of waterFeatures.features) {
-    const coordinates = getRepresentativeCoordinate(feature);
+    const coordinates = representativeCoordinate(feature);
     if (!coordinates) continue;
     const waterClass = classifyWater(feature.properties.waterType);
     const tier =
