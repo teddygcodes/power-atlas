@@ -56,9 +56,11 @@ npm run lint     # eslint
 npm run typecheck # tsc --noEmit
 ```
 
-The app reads pre-generated GeoJSON from `public/geojson/<region>/`. If that data is missing,
-run the ingestion step first (below) — the map will otherwise show a "failed to load local
-power data" message.
+The app reads pre-generated GeoJSON from `public/geojson/<region>/`. The default
+`georgia-demo` dataset is **committed to the repo on purpose**, so the app runs immediately
+after `npm install` — no ingestion needed to see the map. You only run ingestion to refresh
+that data or add a new region. (If a region's data is missing, the map shows a "failed to load
+local power data" message.)
 
 ## Run ingestion
 
