@@ -8,10 +8,11 @@ Power Atlas ingests real OpenStreetMap infrastructure for a region and visualize
 dependencies** from a hypothetical AI data-center campus to the nearest *plausible* power and water
 sources — shows how a campus choice in one layer (cooling type) **cascades** into another (water
 demand) — flags **site-risk constraints** like whether the campus sits in or near a mapped FEMA
-flood zone — **stages the build in phases** with a construction-sequence scrubber — and renders a
-**schematic 3D massing** of the campus that assembles in step with those phases. It is a
-visualization and exploration tool, not an engineering study, with rigorously honest
-data-confidence labeling throughout.
+flood zone — **stages the build in phases** with a construction-sequence scrubber — renders a
+**schematic 3D massing** of the campus that assembles in step with those phases — and can **reverse
+the engine** to *screen* a coarse grid of candidate areas, surfacing where publicly-visible
+dependencies look favorable and mapped risk looks low. It is a visualization and exploration tool,
+not an engineering study, with rigorously honest data-confidence labeling throughout.
 
 ---
 
@@ -24,7 +25,7 @@ data-confidence labeling throughout.
 
 ---
 
-## What it does (v0.6)
+## What it does (v1.0)
 
 - **Ingests real public data** for a configurable bounding box (default: the Atlanta / North Georgia
   corridor) and writes local GeoJSON. Two **OSM** infrastructure layers — **power** (substations,
@@ -69,17 +70,27 @@ data-confidence labeling throughout.
   codes (with the raw code shown), the verbatim raw OSM / FEMA tags, source / path / risk confidence,
   capacity / risk status, and the layer's caveats. It computes nothing new — it makes the existing
   rationale legible.
+- **Site-screening (grid)** — reverses the engine: an optional overlay runs the *same* resolvers
+  across a coarse grid of candidate points (for your current MW + cooling) and surfaces cells **worth
+  investigating**. Each cell carries **three independent qualitative ratings** — power / water / flood
+  (favorable · mixed · unfavorable) — and is surfaced only if it is *not unfavorable on any
+  dimension* (a boolean AND, **never a composite score or rank**). Click a cell for the per-dimension
+  "why" (ratings + reason codes + distance). It is a **screening tool, not a recommender** — it
+  narrows where to do diligence and never names a "best" or "recommended" site; a standing caveat
+  says so. Resolvers are untouched — screening only calls and classifies their output.
 
 ## What it does NOT do
 
-Stress scenarios, site-screening, or full digital-twin modes. It does **not** model grid
-connectivity, capacity, interconnection feasibility, water rights, or water-consumption magnitudes —
-and never claims to. The construction timeline shows phase **sequence only — never a schedule**: no
-build durations, dates, or per-phase cost/capacity numbers. The 3D campus is **schematic massing
-only** — representative blocks, not real dimensions, layout, or engineering, with no per-asset specs.
-Flood zones are **statically cached** FEMA data, not a live or authoritative determination, and carry
-no fabricated probabilities or base-flood elevations (qualitative zone class only). There is no live
-Overpass or FEMA call from the browser.
+Stress scenarios or full digital-twin modes. It does **not** model grid connectivity, capacity,
+interconnection feasibility, water rights, or water-consumption magnitudes — and never claims to. The
+construction timeline shows phase **sequence only — never a schedule**: no build durations, dates, or
+per-phase cost/capacity numbers. The 3D campus is **schematic massing only** — representative blocks,
+not real dimensions, layout, or engineering, with no per-asset specs. **Site-screening narrows where
+to do diligence — it never names a "best", "recommended", or "optimal" site, and emits no composite
+score or rank** (three independent qualitative ratings + an AND-gate, always with the per-dimension
+why). Flood zones are **statically cached** FEMA data, not a live or authoritative determination, and
+carry no fabricated probabilities or base-flood elevations (qualitative zone class only). There is no
+live Overpass or FEMA call from the browser.
 
 ---
 
@@ -105,14 +116,15 @@ npm test           # unit tests (vitest)
 npm run coverage   # coverage report (no threshold gate)
 ```
 
-Tests (118, all green in CI on every push) cover the pure core against **real-data fixtures** — the
+Tests (131, all green in CI on every push) cover the pure core against **real-data fixtures** — the
 power and water resolvers, voltage/water classing, the cooling → water-demand mapping and its
 cascade, the flood risk resolver (inside / near / none on real FEMA polygons) and point-in-polygon,
 the timeline phase-reveal gate (ordinal-only, guarded against any duration/date leaking into output),
 the 3D campus asset-to-phase reveal (cumulative, guarded against any fabricated spec in labels),
 the explainability surfacing (real reason codes + confidence, guarded against any fabricated
-magnitude in added labels), polygon centroid, nearest-feature search, geometry simplification, load
-classes, and warnings.
+magnitude in added labels), the site-screening grid + per-dimension classification + AND-gate
+(guarded against any composite score or "best/recommended" language), polygon centroid,
+nearest-feature search, geometry simplification, load classes, and warnings.
 
 A 5-minute guided walkthrough lives in [DEMO.md](DEMO.md).
 
@@ -220,6 +232,16 @@ type labels only — no kV, MWh, gallons, or dimensions — under a visible "rep
 an architectural or engineering site design" caveat. It reads the same `buildPhase` state and makes
 no resolver calls; it is decorative sequencing of known asset *types*, nothing more.
 
+**Site-screening is a screen, not a recommendation — and has no composite score.** The grid overlay
+runs the *same* resolvers per cell and classifies each output into a separate qualitative rating per
+dimension (`favorable | mixed | unfavorable`) — power and water from coarse, internal
+distance/plausibility thresholds (never shown as magic numbers), flood from low *mapped* risk. A cell
+is **worth investigating** iff it is not `unfavorable` on any dimension: a boolean AND over the three
+ratings, deliberately **never a weighted sum, index, or rank**. The per-dimension breakdown is always
+shown (click a cell), and the standing caveat makes explicit that screening reflects only
+publicly-visible infrastructure and mapped risk — it narrows where to do diligence and is **not a
+site recommendation**. Resolvers are untouched; screening reads and classifies their output.
+
 **Representative coordinates & geometry.** Each feature's analysis coordinate (`repCoord`) is
 computed from **full-resolution** geometry at ingest — polygons (most substations, reservoirs) use
 the area-weighted exterior-ring centroid, lines (transmission, rivers, streams) use a midpoint, and
@@ -237,6 +259,9 @@ coordinate rounding) to keep the GeoJSON small; the resolver always reads the st
 - Capacity is unknown unless verified by a utility or official study; **no consumption magnitudes**
   (gallons/day, MGD, MW-served, %) are ever shown.
 - **Cooling → water demand is qualitative only** — a placeholder direction, not modeled consumption.
+- **Site-screening narrows where to investigate — it is not a site recommendation**, has no composite
+  score, and reflects only publicly-visible infrastructure + mapped risk (not interconnection
+  feasibility, capacity, water rights, land, zoning, or current conditions). Verify everything externally.
 - **Flood zones are statically cached FEMA NFHL data, not current or authoritative**, and cover SFHA
   (high-risk) zones only by default. Verify against the official FEMA Flood Map Service Center
   (msc.fema.gov) before any siting decision; absence of a mapped zone is not proof of no risk.
@@ -253,13 +278,14 @@ coordinate rounding) to keep the GeoJSON small; the resolver always reads the st
 ```
 app/                      Next.js App Router pages (/ and /data)
 components/
-  map/                    PowerAtlasMap + power/water/flood deck.gl layers, candidate paths, toggles
+  map/                    PowerAtlasMap + power/water/flood/screening deck.gl layers, paths, toggles
   power/                  ScenarioPanel (MW + cooling), PowerHUD, DependencyWarnings
   water/                  WaterHUD
   flood/                  FloodHUD (site-risk readout — no path)
   timeline/               PhaseTimeline (construction-sequence scrubber overlay)
   campus/                 Campus3D (react-three-fiber schematic massing inset)
   explain/                ExplainDrawer (read-only slide-in surfacing resolver output)
+  screening/              ScreeningDrawer + ScreeningCaveatBanner (grid screening overlay UI)
   data/                   IngestionCenter, SourceStatusCard, DataLimitationsPanel
   ui/                     Panel, Badge, MetricRow
 lib/
@@ -274,10 +300,11 @@ lib/
   timeline/               phases (ordinal build-phase reveal gate — pure, no recompute)
   campus/                 assets (schematic asset catalog + per-phase reveal — pure, no recompute)
   explain/                explain (surfaces existing resolver output as a display model — no recompute)
+  screening/              grid, classify, screen (runs resolvers over a grid → per-dimension ratings + AND-gate)
   storage/                local GeoJSON writers (server-only), manifest builder
   serverOnly.ts           browser-bundle guard
 scripts/                  ingest-osm-power.ts, ingest-osm-water.ts, ingest-fema-flood.ts
-types/                    infrastructure, water, flood, timeline, campus, geojson, scenario, dependency, ingestion
+types/                    infrastructure, water, flood, timeline, campus, screening, geojson, scenario, dependency, ingestion
 tests/                    vitest specs + real-data fixtures
 public/geojson/<region>/  generated GeoJSON + source manifest
 ```

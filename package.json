@@ -1,6 +1,6 @@
 {
   "name": "power-atlas",
-  "version": "0.6.0",
+  "version": "1.0.0",
   "private": true,
   "description": "AI data-center site to power, water & risk visualizer - public-data planning simulator",
   "scripts": {
