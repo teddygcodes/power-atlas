@@ -8,7 +8,8 @@ Power Atlas ingests real OpenStreetMap infrastructure for a region and visualize
 dependencies** from a hypothetical AI data-center campus to the nearest *plausible* power and water
 sources — shows how a campus choice in one layer (cooling type) **cascades** into another (water
 demand) — flags **site-risk constraints** like whether the campus sits in or near a mapped FEMA
-flood zone — and **stages the build in phases** with a construction-sequence scrubber. It is a
+flood zone — **stages the build in phases** with a construction-sequence scrubber — and renders a
+**schematic 3D massing** of the campus that assembles in step with those phases. It is a
 visualization and exploration tool, not an engineering study, with rigorously honest
 data-confidence labeling throughout.
 
@@ -23,7 +24,7 @@ data-confidence labeling throughout.
 
 ---
 
-## What it does (v0.5)
+## What it does (v0.6)
 
 - **Ingests real public data** for a configurable bounding box (default: the Atlanta / North Georgia
   corridor) and writes local GeoJSON. Two **OSM** infrastructure layers — **power** (substations,
@@ -53,6 +54,12 @@ data-confidence labeling throughout.
   features — nothing is recomputed — and shows build **sequence, not a schedule**: no durations,
   dates, or month/week numbers anywhere. At the operational phase the view is identical to the
   un-timelined map.
+- **3D campus massing** — a react-three-fiber inset renders the campus as schematic blocks/cylinders
+  (data halls, substation yard, transformers, cooling plant, water tanks, BESS, backup generators,
+  roads), assembling in step with the same build phases. It is **purely cosmetic representative
+  massing** — no real dimensions, layout, or per-asset specs, just plain type labels under a "not an
+  architectural or engineering site design" caveat. Reuses the timeline's phase state; recomputes
+  nothing.
 - **Click to reposition** the campus, switch size, or change cooling; resolvers, HUDs, and candidate
   paths update live.
 - **Surfaces provenance** in an Ingestion Center (`/data`): source-manifest counts, bbox, last sync,
@@ -60,13 +67,14 @@ data-confidence labeling throughout.
 
 ## What it does NOT do
 
-Stress scenarios, 3D campus assets, or full digital-twin modes. It does **not** model grid
+Stress scenarios, site-screening, or full digital-twin modes. It does **not** model grid
 connectivity, capacity, interconnection feasibility, water rights, or water-consumption magnitudes —
 and never claims to. The construction timeline shows phase **sequence only — never a schedule**: no
-build durations, dates, or per-phase cost/capacity numbers. Flood zones are **statically cached**
-FEMA data, not a live or authoritative determination, and carry no fabricated probabilities or
-base-flood elevations (qualitative zone class only). There is no live Overpass or FEMA call from the
-browser.
+build durations, dates, or per-phase cost/capacity numbers. The 3D campus is **schematic massing
+only** — representative blocks, not real dimensions, layout, or engineering, with no per-asset specs.
+Flood zones are **statically cached** FEMA data, not a live or authoritative determination, and carry
+no fabricated probabilities or base-flood elevations (qualitative zone class only). There is no live
+Overpass or FEMA call from the browser.
 
 ---
 
@@ -92,10 +100,11 @@ npm test           # unit tests (vitest)
 npm run coverage   # coverage report (no threshold gate)
 ```
 
-Tests (99, all green in CI on every push) cover the pure core against **real-data fixtures** — the
+Tests (108, all green in CI on every push) cover the pure core against **real-data fixtures** — the
 power and water resolvers, voltage/water classing, the cooling → water-demand mapping and its
 cascade, the flood risk resolver (inside / near / none on real FEMA polygons) and point-in-polygon,
 the timeline phase-reveal gate (ordinal-only, guarded against any duration/date leaking into output),
+the 3D campus asset-to-phase reveal (cumulative, guarded against any fabricated spec in labels),
 polygon centroid, nearest-feature search, geometry simplification, load classes, and warnings.
 
 ## Ingestion
@@ -195,6 +204,13 @@ schedule: the layer emits no durations, dates, or per-phase cost/capacity number
 the phase model + output against any time value leaking in. Scrubbing only reveals/hides the campus's
 own build features; at the operational phase the rendered map equals the un-timelined view exactly.
 
+**The 3D campus is schematic massing, not a model.** The react-three-fiber inset renders primitive
+shapes (boxes / cylinders) in **arbitrary scene units** — relative sizes are roughly indicative (a
+data hall reads bigger than a transformer) but are **not to-scale engineering**. Assets carry plain
+type labels only — no kV, MWh, gallons, or dimensions — under a visible "representative massing — not
+an architectural or engineering site design" caveat. It reads the same `buildPhase` state and makes
+no resolver calls; it is decorative sequencing of known asset *types*, nothing more.
+
 **Representative coordinates & geometry.** Each feature's analysis coordinate (`repCoord`) is
 computed from **full-resolution** geometry at ingest — polygons (most substations, reservoirs) use
 the area-weighted exterior-ring centroid, lines (transmission, rivers, streams) use a midpoint, and
@@ -233,6 +249,7 @@ components/
   water/                  WaterHUD
   flood/                  FloodHUD (site-risk readout — no path)
   timeline/               PhaseTimeline (construction-sequence scrubber overlay)
+  campus/                 Campus3D (react-three-fiber schematic massing inset)
   data/                   IngestionCenter, SourceStatusCard, DataLimitationsPanel
   ui/                     Panel, Badge, MetricRow
 lib/
@@ -245,10 +262,11 @@ lib/
   cooling/                waterDemand  (cooling type + MW → qualitative water-demand class)
   flood/                  floodResolver (risk shape), floodWarnings
   timeline/               phases (ordinal build-phase reveal gate — pure, no recompute)
+  campus/                 assets (schematic asset catalog + per-phase reveal — pure, no recompute)
   storage/                local GeoJSON writers (server-only), manifest builder
   serverOnly.ts           browser-bundle guard
 scripts/                  ingest-osm-power.ts, ingest-osm-water.ts, ingest-fema-flood.ts
-types/                    infrastructure, water, flood, timeline, geojson, scenario, dependency, ingestion
+types/                    infrastructure, water, flood, timeline, campus, geojson, scenario, dependency, ingestion
 tests/                    vitest specs + real-data fixtures
 public/geojson/<region>/  generated GeoJSON + source manifest
 ```
@@ -258,4 +276,4 @@ Contributing with an AI agent? See [CLAUDE.md](CLAUDE.md) for how to work in thi
 ## Tech stack
 
 Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · MapLibre GL · react-map-gl ·
-deck.gl 9 · osmtogeojson · axios · tsx · Vitest.
+deck.gl 9 · three + react-three-fiber 9 (lazy-loaded 3D inset) · osmtogeojson · axios · tsx · Vitest.
