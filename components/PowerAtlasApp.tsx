@@ -15,6 +15,7 @@ import {
   emptyFloodFeatureCollection,
 } from "../types/geojson";
 import type { CampusSizeMW, CoolingType } from "../types/scenario";
+import type { BuildPhase } from "../types/timeline";
 import { fetchFeatureCollection } from "../lib/geo/geojson";
 import { resolveCandidatePowerDependency } from "../lib/power/dependencyResolver";
 import { resolveCandidateWaterDependency } from "../lib/water/waterResolver";
@@ -26,6 +27,7 @@ import { PowerHUD } from "./power/PowerHUD";
 import { DependencyWarnings } from "./power/DependencyWarnings";
 import { WaterHUD } from "./water/WaterHUD";
 import { FloodHUD } from "./flood/FloodHUD";
+import { PhaseTimeline } from "./timeline/PhaseTimeline";
 
 // Map is WebGL/maplibre — render client-only to avoid SSR window access.
 const PowerAtlasMap = dynamic(() => import("./map/PowerAtlasMap"), {
@@ -62,6 +64,10 @@ export function PowerAtlasApp() {
     waterPath: false,
     flood: false,
   });
+  // Construction-timeline phase. Default "operational" = every campus feature
+  // revealed, so first paint is identical to the un-timelined app; scrubbing back
+  // only HIDES the campus's build features (display gate, no recompute).
+  const [buildPhase, setBuildPhase] = useState<BuildPhase>("operational");
   const [data, setData] = useState<Collections>({});
   const [error, setError] = useState<string | null>(null);
   const requested = useRef<Set<string>>(new Set());
@@ -195,19 +201,23 @@ export function PowerAtlasApp() {
               </div>
             </div>
           ) : data.substations && data.transmissionLines ? (
-            <PowerAtlasMap
-              substations={data.substations}
-              transmissionLines={data.transmissionLines}
-              powerPlants={data.powerPlants ?? emptyFeatureCollection()}
-              water={data.water ?? emptyWaterFeatureCollection()}
-              floodZones={data.flood ?? emptyFloodFeatureCollection()}
-              campus={campus}
-              campusSizeMW={campusSizeMW}
-              dependency={dependency}
-              waterDependency={waterDependency}
-              visibility={visibility}
-              onPickCampus={setCampus}
-            />
+            <>
+              <PowerAtlasMap
+                substations={data.substations}
+                transmissionLines={data.transmissionLines}
+                powerPlants={data.powerPlants ?? emptyFeatureCollection()}
+                water={data.water ?? emptyWaterFeatureCollection()}
+                floodZones={data.flood ?? emptyFloodFeatureCollection()}
+                campus={campus}
+                campusSizeMW={campusSizeMW}
+                dependency={dependency}
+                waterDependency={waterDependency}
+                visibility={visibility}
+                buildPhase={buildPhase}
+                onPickCampus={setCampus}
+              />
+              <PhaseTimeline phase={buildPhase} onChange={setBuildPhase} />
+            </>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-atlas-muted">
               Loading power infrastructure…

@@ -15,6 +15,8 @@ import type {
 import type { CampusSizeMW } from "../../types/scenario";
 import type { CandidatePowerDependency } from "../../types/dependency";
 import type { CandidateWaterDependency } from "../../types/water";
+import type { BuildPhase } from "../../types/timeline";
+import { revealForPhase } from "../../lib/timeline/phases";
 import {
   buildInfrastructureLayers,
   type LayerVisibility,
@@ -80,6 +82,7 @@ export default function PowerAtlasMap({
   dependency,
   waterDependency,
   visibility,
+  buildPhase,
   onPickCampus,
 }: {
   substations: PowerFeatureCollection;
@@ -92,9 +95,16 @@ export default function PowerAtlasMap({
   dependency: CandidatePowerDependency | null;
   waterDependency: CandidateWaterDependency | null;
   visibility: LayerVisibility;
+  buildPhase: BuildPhase;
   onPickCampus: (coords: [number, number]) => void;
 }) {
   const layers = useMemo<Layer[]>(() => {
+    // The timeline only sequences the REVEAL of the campus's own build features
+    // (campus marker + the two candidate paths). It never recomputes anything; at
+    // the "operational" phase every flag is true, so the view equals the un-timelined
+    // app. The background world below follows its user toggles, unphased.
+    const reveal = revealForPhase(buildPhase);
+
     // Water + flood (area layers) underneath the point/line infrastructure.
     const ls: Layer[] = buildWaterLayers({
       water,
@@ -111,7 +121,7 @@ export default function PowerAtlasMap({
         candidateFeatureId: dependency?.featureId,
       }),
     );
-    if (visibility.candidatePath && dependency) {
+    if (visibility.candidatePath && dependency && reveal.candidatePowerPath) {
       ls.push(
         buildCandidatePathLayer({
           campus,
@@ -120,7 +130,7 @@ export default function PowerAtlasMap({
         }),
       );
     }
-    if (visibility.waterPath && waterDependency) {
+    if (visibility.waterPath && waterDependency && reveal.candidateWaterPath) {
       ls.push(
         buildCandidateWaterPath({
           campus,
@@ -142,6 +152,7 @@ export default function PowerAtlasMap({
     waterDependency,
     campus,
     campusSizeMW,
+    buildPhase,
   ]);
 
   const handleClick = useCallback(
