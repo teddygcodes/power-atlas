@@ -52,11 +52,15 @@ npm install
 ## Run the app
 
 ```bash
-npm run dev      # http://localhost:3000
-npm run build    # production build
-npm run lint     # eslint
+npm run dev       # http://localhost:3000
+npm run build     # production build
+npm run lint      # eslint
 npm run typecheck # tsc --noEmit
+npm test          # unit tests (vitest)
 ```
+
+Unit tests cover the pure core logic — the dependency resolver, polygon centroid,
+nearest-feature search, load classes, and warnings — and run in CI on every push.
 
 The app reads pre-generated GeoJSON from `public/geojson/<region>/`. The default
 `georgia-demo` dataset is **committed to the repo on purpose**, so the app runs immediately
@@ -169,4 +173,4 @@ public/geojson/<region>/ generated GeoJSON + source manifest
 ## Tech stack
 
 Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · MapLibre GL · react-map-gl ·
-deck.gl 9 · osmtogeojson · axios · tsx.
+deck.gl 9 · osmtogeojson · axios · tsx · Vitest.
