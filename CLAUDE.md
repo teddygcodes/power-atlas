@@ -6,10 +6,11 @@ sources, plus site-risk constraints, with deliberately honest data-confidence la
 React 19 + TS, MapLibre + deck.gl, Vitest.
 
 ## Scope (current state)
-- **Built (v0.4):** power resolver, water resolver, cooling→water cascade, flood site-risk; lazy-loaded layers + repCoord geometry decoupling; 91 tests.
-- **Roadmap — do not add unprompted:** construction timeline, stress scenarios, 3D campus assets, full digital-twin modes.
+- **Built (v0.5):** power resolver, water resolver, cooling→water cascade, flood site-risk, construction-timeline reveal; lazy-loaded layers + repCoord geometry decoupling; 99 tests.
+- **Roadmap — do not add unprompted:** stress scenarios, 3D campus assets, full digital-twin modes.
 - **Two resolver shapes now exist.** Power & water are *nearest-source dependency* resolvers (path drawn). Flood is a *site-risk constraint* (campus inside/near a zone via point-in-polygon; NO path). Don't force a new risk layer into the dependency shape, or vice-versa — pick the shape that matches the question.
 - **Cooling is a cross-layer input,** not a map layer: cooling type + MW → qualitative water-demand class feeding the water resolver. Flood does NOT interact with power/water/cooling.
+- **Timeline is a presentational display gate,** not analysis: `lib/timeline/phases.ts` `revealForPhase` gates which campus-build features (campus marker + the two candidate paths) render, AND-combined with the existing layer toggles. It calls NO resolver and recomputes nothing; at the `operational` phase the view equals the un-timelined map. Phases are ORDINAL only — never durations/dates/schedule.
 
 ## Commands
 - `npm run dev` — dev server at localhost:3000
@@ -18,7 +19,7 @@ React 19 + TS, MapLibre + deck.gl, Vitest.
 
 ## Architecture & boundaries
 - **Ingestion is scripts/server-only.** The Overpass client (`lib/ingestion/osm/overpassClient.ts`), the FEMA flood client (`lib/ingestion/fema/floodClient.ts`), and the filesystem writers (`lib/storage/localGeoJsonStore.ts`) import `lib/serverOnly.ts`, which throws in a browser. The browser only `fetch`es local GeoJSON from `public/geojson/<region>/` — never Overpass or FEMA.
-- **`lib/geo/*`, `lib/power/*`, `lib/water/*`, `lib/cooling/*`, `lib/flood/*` are pure/isomorphic** (no node-only imports) — shared by the ingest script and the browser. Keep them that way.
+- **`lib/geo/*`, `lib/power/*`, `lib/water/*`, `lib/cooling/*`, `lib/flood/*`, `lib/timeline/*` are pure/isomorphic** (no node-only imports) — shared by the ingest script and the browser. Keep them that way.
 - **Dependency resolvers share one pattern** (`dependencyResolver.ts`, `waterResolver.ts`): rank by load-aware plausibility **tier-then-distance** — `plausible(0) > unknown/data-gap(1) > low-for-load(2)`, nearest within tier. Never hard-exclude a candidate; surface it and warn. New *dependency* layers mirror this.
 - **Flood resolver (`lib/flood/floodResolver.ts`) is a DIFFERENT shape — risk, not dependency.** It returns `CampusFloodRisk` (relationship inside/near/none + qualitative severity), not a `Candidate*Dependency`. No ranking, no path, no `pathConfidence`/`capacityStatus`. Don't retrofit it onto the nearest-source pattern. Inside = point-in-polygon (`lib/geo/pointInPolygon.ts`, holes respected); near distance = nearest-ring-vertex haversine (≤1km), not centroid.
 - Generated GeoJSON in `public/geojson/` is **committed on purpose** (app runs on clone); `data/raw/` is gitignored.
@@ -29,12 +30,13 @@ React 19 + TS, MapLibre + deck.gl, Vitest.
 - Raw OSM tags (esp. `voltage`) and raw FEMA attrs are preserved **verbatim** in `rawTags` — never parsed/normalized for display.
 - **Water demand = cooling type + campus MW → qualitative class (low/moderate/high)** that sets the water plausibility threshold. Direction and class ONLY — never a consumption magnitude; actual use (climate/design/load factor) is unmodeled. Don't build numbers on top of it.
 - **Flood honesty is the sharpest constraint.** Real FEMA NFHL labeled `source:"fema"`, `sourceConfidence:"official"`, `cached:true` — BUT every flood result must carry the "statically cached, not authoritative, verify at msc.fema.gov" caveat, and *none* adds "absence isn't proof of no risk." **NEVER fabricate flood polygons, probabilities, or base-flood elevations** — real FEMA data or honest-empty, nothing between. Qualitative zone class only.
+- **Timeline = ordinal SEQUENCE, never a schedule.** No durations, dates, month/week numbers, or per-phase cost/capacity — not in UI, tooltips, or comments. The fake-precision trap for a time layer is duration (permitting/queues/construction are unknowable from public data). The phase scrubber carries a "build SEQUENCE, not a schedule" caveat; keep it.
 
 ## Testing
 - Vitest; tests in `tests/**/*.test.ts` (tsc type-checks tests too; resolveJsonModule is on).
 - **Use real-data fixtures, not toy data.** Extract real features from the ingested GeoJSON into `tests/fixtures/*.json`; test the full path (irregular polygon → centroid → nearest → resolver). Spread fixtures so the nearest is unambiguous.
-- Coverage scoped to `lib/geo|power|water|cooling|flood`; CI reports it with **no threshold gate**.
-- Flood tests assert **no fabricated magnitude** in output (regex-guard %/gpd/MGD/ft/annual-chance) and that the cached/MSC caveat is always present.
+- Coverage scoped to `lib/geo|power|water|cooling|flood|timeline`; CI reports it with **no threshold gate**.
+- Flood tests assert **no fabricated magnitude** in output (regex-guard %/gpd/MGD/ft/annual-chance) and that the cached/MSC caveat is always present. Timeline tests similarly regex-guard the phase model + reveal output against any duration/date/schedule value leaking in.
 
 ## Gotchas
 - **Overpass returns HTTP 406 for the default HTTP-client User-Agent.** `overpassClient.ts` sends an explicit `User-Agent` — keep it.

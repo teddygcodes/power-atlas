@@ -7,9 +7,10 @@
 Power Atlas ingests real OpenStreetMap infrastructure for a region and visualizes **candidate
 dependencies** from a hypothetical AI data-center campus to the nearest *plausible* power and water
 sources — shows how a campus choice in one layer (cooling type) **cascades** into another (water
-demand) — and flags **site-risk constraints** like whether the campus sits in or near a mapped FEMA
-flood zone. It is a visualization and exploration tool, not an engineering study, with rigorously
-honest data-confidence labeling throughout.
+demand) — flags **site-risk constraints** like whether the campus sits in or near a mapped FEMA
+flood zone — and **stages the build in phases** with a construction-sequence scrubber. It is a
+visualization and exploration tool, not an engineering study, with rigorously honest
+data-confidence labeling throughout.
 
 ---
 
@@ -22,7 +23,7 @@ honest data-confidence labeling throughout.
 
 ---
 
-## What it does (v0.4)
+## What it does (v0.5)
 
 - **Ingests real public data** for a configurable bounding box (default: the Atlanta / North Georgia
   corridor) and writes local GeoJSON. Two **OSM** infrastructure layers — **power** (substations,
@@ -46,6 +47,12 @@ honest data-confidence labeling throughout.
 - **Load-aware plausibility:** a large / high-demand campus prefers a transmission-voltage substation
   over a closer low-voltage one, and a major river/reservoir over a closer minor stream — but a
   less-suitable source is never hidden; it is surfaced and flagged.
+- **Construction timeline** — a phase scrubber (`site prep → power → water + cooling → operational`)
+  reveals the campus's own build features in sequence: the site marker, then the candidate power
+  path, then the candidate water path. It is a **presentational reveal** of already-resolved
+  features — nothing is recomputed — and shows build **sequence, not a schedule**: no durations,
+  dates, or month/week numbers anywhere. At the operational phase the view is identical to the
+  un-timelined map.
 - **Click to reposition** the campus, switch size, or change cooling; resolvers, HUDs, and candidate
   paths update live.
 - **Surfaces provenance** in an Ingestion Center (`/data`): source-manifest counts, bbox, last sync,
@@ -53,11 +60,13 @@ honest data-confidence labeling throughout.
 
 ## What it does NOT do
 
-Construction timeline, stress scenarios, 3D campus assets, or full digital-twin modes. It does
-**not** model grid connectivity, capacity, interconnection feasibility, water rights, or
-water-consumption magnitudes — and never claims to. Flood zones are **statically cached** FEMA data,
-not a live or authoritative determination, and carry no fabricated probabilities or base-flood
-elevations (qualitative zone class only). There is no live Overpass or FEMA call from the browser.
+Stress scenarios, 3D campus assets, or full digital-twin modes. It does **not** model grid
+connectivity, capacity, interconnection feasibility, water rights, or water-consumption magnitudes —
+and never claims to. The construction timeline shows phase **sequence only — never a schedule**: no
+build durations, dates, or per-phase cost/capacity numbers. Flood zones are **statically cached**
+FEMA data, not a live or authoritative determination, and carry no fabricated probabilities or
+base-flood elevations (qualitative zone class only). There is no live Overpass or FEMA call from the
+browser.
 
 ---
 
@@ -83,9 +92,10 @@ npm test           # unit tests (vitest)
 npm run coverage   # coverage report (no threshold gate)
 ```
 
-Tests (91, all green in CI on every push) cover the pure core against **real-data fixtures** — the
+Tests (99, all green in CI on every push) cover the pure core against **real-data fixtures** — the
 power and water resolvers, voltage/water classing, the cooling → water-demand mapping and its
 cascade, the flood risk resolver (inside / near / none on real FEMA polygons) and point-in-polygon,
+the timeline phase-reveal gate (ordinal-only, guarded against any duration/date leaking into output),
 polygon centroid, nearest-feature search, geometry simplification, load classes, and warnings.
 
 ## Ingestion
@@ -178,6 +188,13 @@ it is statically cached, not authoritative, and must be verified against the FEM
 Center (msc.fema.gov). No probabilities or base-flood elevations are ever fabricated, and *none* is
 always qualified with "absence of a mapped zone is not proof of no risk."
 
+**The construction timeline is presentational, and ordinal.** It is a **display gate** over
+already-resolved features — it makes **no** resolver calls and recomputes nothing. Phases are an
+ordered build *sequence* (`site_prep → power_infrastructure → water_cooling → operational`), never a
+schedule: the layer emits no durations, dates, or per-phase cost/capacity numbers, and a test guards
+the phase model + output against any time value leaking in. Scrubbing only reveals/hides the campus's
+own build features; at the operational phase the rendered map equals the un-timelined view exactly.
+
 **Representative coordinates & geometry.** Each feature's analysis coordinate (`repCoord`) is
 computed from **full-resolution** geometry at ingest — polygons (most substations, reservoirs) use
 the area-weighted exterior-ring centroid, lines (transmission, rivers, streams) use a midpoint, and
@@ -215,6 +232,7 @@ components/
   power/                  ScenarioPanel (MW + cooling), PowerHUD, DependencyWarnings
   water/                  WaterHUD
   flood/                  FloodHUD (site-risk readout — no path)
+  timeline/               PhaseTimeline (construction-sequence scrubber overlay)
   data/                   IngestionCenter, SourceStatusCard, DataLimitationsPanel
   ui/                     Panel, Badge, MetricRow
 lib/
@@ -226,10 +244,11 @@ lib/
   water/                  waterClass, waterResolver, waterWarnings
   cooling/                waterDemand  (cooling type + MW → qualitative water-demand class)
   flood/                  floodResolver (risk shape), floodWarnings
+  timeline/               phases (ordinal build-phase reveal gate — pure, no recompute)
   storage/                local GeoJSON writers (server-only), manifest builder
   serverOnly.ts           browser-bundle guard
 scripts/                  ingest-osm-power.ts, ingest-osm-water.ts, ingest-fema-flood.ts
-types/                    infrastructure, water, flood, geojson, scenario, dependency, ingestion
+types/                    infrastructure, water, flood, timeline, geojson, scenario, dependency, ingestion
 tests/                    vitest specs + real-data fixtures
 public/geojson/<region>/  generated GeoJSON + source manifest
 ```
