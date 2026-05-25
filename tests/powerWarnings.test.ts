@@ -38,4 +38,16 @@ describe("buildPowerWarnings", () => {
       ),
     ).toBe(false);
   });
+
+  it("adds the low-for-load warning only when voltageClassLowForLoad is set", () => {
+    const withFlag = buildPowerWarnings({
+      campusSizeMW: 500,
+      voltage: "115000",
+      voltageClassLowForLoad: true,
+    });
+    expect(withFlag.some((s) => s.includes("appears low for this load class"))).toBe(true);
+
+    const withoutFlag = buildPowerWarnings({ campusSizeMW: 500, voltage: "230000" });
+    expect(withoutFlag.some((s) => s.includes("appears low for this load class"))).toBe(false);
+  });
 });

@@ -137,3 +137,104 @@ describe("resolver against REAL georgia-demo features", () => {
     expect(dep.candidateCoordinates).toEqual(lineCoord);
   });
 });
+
+function collection(features: PowerFeature[]): PowerFeatureCollection {
+  return { type: "FeatureCollection", features };
+}
+
+describe("voltage-class plausibility on REAL features", () => {
+  const sub230 = byOsmId("way/34771030"); // 230 kV → transmission
+  const sub115 = byOsmId("way/34832866"); // 115 kV → sub_transmission
+
+  it("a 500 MW load prefers the real 230 kV substation over a CLOSER 115 kV one", () => {
+    // Campus sits right next to the 115 kV substation; the nearest 230 kV one is
+    // ~26 km away. Distance alone would pick the 115 kV; voltage plausibility wins.
+    const c115 = getRepresentativeCoordinate(sub115)!;
+    const campus: [number, number] = [c115[0] + 0.002, c115[1] + 0.002];
+
+    const dep = resolveCandidatePowerDependency({
+      scenario: scenario(500, campus),
+      substations, // full fixture: both 230 kV subs + the 115 kV sub
+      transmissionLines,
+    })!;
+
+    expect(dep.featureId).toBe(sub230.properties.id); // the transmission-class one
+    expect(dep.featureId).not.toBe(sub115.properties.id); // not the closer low one
+    expect(dep.reasonCodes).toContain("voltage_class_plausible");
+    expect(dep.capacityStatus).toBe("unknown"); // never a capacity claim
+  });
+
+  it("at 50 MW the same campus picks the CLOSER 115 kV substation (it's plausible there)", () => {
+    // At 50 MW, sub_transmission (115 kV) is plausible, so distance decides and
+    // the nearby 115 kV substation wins — confirms the heuristic is load-aware.
+    const c115 = getRepresentativeCoordinate(sub115)!;
+    const campus: [number, number] = [c115[0] + 0.002, c115[1] + 0.002];
+
+    const dep = resolveCandidatePowerDependency({
+      scenario: scenario(50, campus),
+      substations,
+      transmissionLines,
+    })!;
+
+    expect(dep.featureId).toBe(sub115.properties.id);
+    expect(dep.reasonCodes).toContain("voltage_class_plausible");
+  });
+
+  it("low_for_load: a 500 MW load with ONLY the 115 kV substation returns it, flagged", () => {
+    const c115 = getRepresentativeCoordinate(sub115)!;
+    const campus: [number, number] = [c115[0] + 0.002, c115[1] + 0.002];
+
+    const dep = resolveCandidatePowerDependency({
+      scenario: scenario(500, campus),
+      substations: collection([sub115]),
+      transmissionLines,
+    })!;
+
+    expect(dep.featureId).toBe(sub115.properties.id); // not excluded
+    expect(dep.voltage).toBe("115000"); // raw string preserved, never overwritten
+    expect(dep.reasonCodes).toContain("voltage_class_low_for_load");
+    expect(
+      dep.warnings.some((w) => w.includes("appears low for this load class")),
+    ).toBe(true);
+    expect(dep.capacityStatus).toBe("unknown");
+  });
+
+  it("unknown voltage: a tag-stripped substation classes unknown and is NOT excluded", () => {
+    const noVoltage: PowerFeature = {
+      ...sub230,
+      properties: { ...sub230.properties, voltage: undefined },
+    };
+    const c = getRepresentativeCoordinate(noVoltage)!;
+    const campus: [number, number] = [c[0] + 0.002, c[1] + 0.002];
+
+    const dep = resolveCandidatePowerDependency({
+      scenario: scenario(500, campus),
+      substations: collection([noVoltage]),
+      transmissionLines,
+    })!;
+
+    expect(dep.featureId).toBe(sub230.properties.id);
+    expect(dep.reasonCodes).toContain("voltage_class_unknown");
+    expect(dep.capacityStatus).toBe("unknown");
+  });
+
+  it("tier order: unknown-voltage outranks a same-distance low-for-load substation", () => {
+    // Both placed equally near the campus; at 500 MW the 115 kV is low-for-load
+    // while the tag-stripped one is a data gap — the data gap ranks higher.
+    const c115 = getRepresentativeCoordinate(sub115)!;
+    const campus: [number, number] = [c115[0] + 0.001, c115[1] + 0.001];
+    const unknownAtSamePlace: PowerFeature = {
+      ...sub115,
+      properties: { ...sub115.properties, id: "test/unknown", osmId: "test/unknown", voltage: undefined },
+    };
+
+    const dep = resolveCandidatePowerDependency({
+      scenario: scenario(500, campus),
+      substations: collection([sub115, unknownAtSamePlace]),
+      transmissionLines,
+    })!;
+
+    expect(dep.featureId).toBe("test/unknown");
+    expect(dep.reasonCodes).toContain("voltage_class_unknown");
+  });
+});

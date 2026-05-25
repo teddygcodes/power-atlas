@@ -5,6 +5,7 @@ import type { CampusSizeMW } from "../../types/scenario";
 export function buildPowerWarnings(params: {
   campusSizeMW: CampusSizeMW;
   voltage?: string;
+  voltageClassLowForLoad?: boolean;
 }): string[] {
   const warnings: string[] = [
     "This is a candidate visible power dependency derived from public OSM data.",
@@ -14,6 +15,11 @@ export function buildPowerWarnings(params: {
 
   if (!params.voltage) {
     warnings.push("OSM voltage tag is missing for this feature.");
+  }
+  if (params.voltageClassLowForLoad) {
+    warnings.push(
+      "Nearest visible substation's tagged voltage appears low for this load class; transmission-level interconnection is typically required and must be confirmed with the utility.",
+    );
   }
   if (params.campusSizeMW >= 250) {
     warnings.push(
