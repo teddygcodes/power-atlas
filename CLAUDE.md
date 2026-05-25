@@ -6,8 +6,9 @@ plausible source, with deliberately honest data-confidence labeling. Next.js 15 
 MapLibre + deck.gl, Vitest.
 
 ## Scope (current state)
-- **Built:** power resolver, water resolver (v0.2).
-- **Not yet built — do not add unprompted:** cooling, flood risk, construction timeline, stress scenarios, 3D.
+- **Built (v0.2):** power resolver, water resolver; lazy-loaded layers + repCoord geometry decoupling; 68 tests.
+- **Roadmap — do not add unprompted:** cooling, flood risk, construction timeline, stress scenarios, 3D campus assets.
+- **Cooling is next, and is the FIRST layer that interacts with an existing one** — it feeds water demand and retires the MW→water proxy, so it is not a clean isolated mirror like water was. Scope it carefully.
 
 ## Commands
 - `npm run dev` — dev server at localhost:3000
@@ -24,7 +25,7 @@ MapLibre + deck.gl, Vitest.
 - Every dependency is candidate/estimated: `capacityStatus: "unknown"`, `pathConfidence: "derived"`, `sourceConfidence: "community"`, with proximity-caveat warnings (power: ≠ connectivity; water: ≠ water rights).
 - **Never emit numbers implying capacity** (MW served, gallons/day, MGD, %). Classing (voltage / water type) is qualitative and internal-only.
 - Raw OSM tags (esp. `voltage`) are preserved **verbatim** — never parsed/normalized for display.
-- **Water demand is keyed off campus MW as a rough proxy only** — cooling is not yet modeled. Replace this when the cooling layer lands; do not treat MW→water as a real relationship.
+- **Water demand is keyed off campus MW as a ROUGH PROXY ONLY** — cooling is not yet modeled. This is a deliberate placeholder, not a real relationship; replace it when the cooling layer lands. Do not treat MW→water as settled, and do not build numbers on top of it.
 
 ## Testing
 - Vitest; tests in `tests/**/*.test.ts` (tsc type-checks tests too; resolveJsonModule is on).
@@ -42,3 +43,4 @@ MapLibre + deck.gl, Vitest.
 - Build in phases; show real output at checkpoints (ingestion counts, resolver-on-fixture) before proceeding.
 - Verify UI in a real browser and confirm **zero Overpass calls from the client** before claiming done.
 - Commit phase-by-phase; push and watch CI (`gh run watch <id> --exit-status`) to green.
+- Before `git add -A`, check `git status` for untracked junk (throwaway scripts, stray PNGs, scratch files) and remove it. Don't blind-stage.
