@@ -77,7 +77,7 @@ export function PowerHUD({
             <Badge tone="derived" title="Path confidence">
               Path: {dependency.pathConfidence}
             </Badge>
-            <Badge tone="unknown" title="Capacity is not claimed in v0.1">
+            <Badge tone="unknown" title="Capacity is never inferred or claimed">
               Capacity: {dependency.capacityStatus}
             </Badge>
           </div>
