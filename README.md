@@ -64,6 +64,11 @@ data-confidence labeling throughout.
   paths update live.
 - **Surfaces provenance** in an Ingestion Center (`/data`): source-manifest counts, bbox, last sync,
   and per-layer warnings + limitations.
+- **Explainability drawer** — click *Explain* on any power / water / flood output to open a
+  read-only panel that surfaces *exactly* what the resolver already produced: human-readable reason
+  codes (with the raw code shown), the verbatim raw OSM / FEMA tags, source / path / risk confidence,
+  capacity / risk status, and the layer's caveats. It computes nothing new — it makes the existing
+  rationale legible.
 
 ## What it does NOT do
 
@@ -100,12 +105,16 @@ npm test           # unit tests (vitest)
 npm run coverage   # coverage report (no threshold gate)
 ```
 
-Tests (108, all green in CI on every push) cover the pure core against **real-data fixtures** — the
+Tests (118, all green in CI on every push) cover the pure core against **real-data fixtures** — the
 power and water resolvers, voltage/water classing, the cooling → water-demand mapping and its
 cascade, the flood risk resolver (inside / near / none on real FEMA polygons) and point-in-polygon,
 the timeline phase-reveal gate (ordinal-only, guarded against any duration/date leaking into output),
 the 3D campus asset-to-phase reveal (cumulative, guarded against any fabricated spec in labels),
-polygon centroid, nearest-feature search, geometry simplification, load classes, and warnings.
+the explainability surfacing (real reason codes + confidence, guarded against any fabricated
+magnitude in added labels), polygon centroid, nearest-feature search, geometry simplification, load
+classes, and warnings.
+
+A 5-minute guided walkthrough lives in [DEMO.md](DEMO.md).
 
 ## Ingestion
 
@@ -250,6 +259,7 @@ components/
   flood/                  FloodHUD (site-risk readout — no path)
   timeline/               PhaseTimeline (construction-sequence scrubber overlay)
   campus/                 Campus3D (react-three-fiber schematic massing inset)
+  explain/                ExplainDrawer (read-only slide-in surfacing resolver output)
   data/                   IngestionCenter, SourceStatusCard, DataLimitationsPanel
   ui/                     Panel, Badge, MetricRow
 lib/
@@ -263,6 +273,7 @@ lib/
   flood/                  floodResolver (risk shape), floodWarnings
   timeline/               phases (ordinal build-phase reveal gate — pure, no recompute)
   campus/                 assets (schematic asset catalog + per-phase reveal — pure, no recompute)
+  explain/                explain (surfaces existing resolver output as a display model — no recompute)
   storage/                local GeoJSON writers (server-only), manifest builder
   serverOnly.ts           browser-bundle guard
 scripts/                  ingest-osm-power.ts, ingest-osm-water.ts, ingest-fema-flood.ts
