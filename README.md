@@ -1,5 +1,7 @@
 # Power Atlas
 
+[![CI](https://github.com/teddygcodes/power-atlas/actions/workflows/ci.yml/badge.svg)](https://github.com/teddygcodes/power-atlas/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/teddygcodes/power-atlas/blob/main/LICENSE)
+
 **AI Infrastructure Site → Power Visualizer** — a public-data planning simulator.
 
 Power Atlas ingests real OpenStreetMap power infrastructure (substations, transmission
