@@ -39,6 +39,10 @@ const PowerAtlasMap = dynamic(() => import("./map/PowerAtlasMap"), {
   ),
 });
 
+// 3D campus massing is WebGL (react-three-fiber) — client-only, lazy-loaded so three
+// stays out of the initial/server bundle.
+const Campus3D = dynamic(() => import("./campus/Campus3D"), { ssr: false });
+
 const REGION = "georgia-demo";
 const DEFAULT_CAMPUS: [number, number] = [-84.388, 33.749];
 
@@ -68,6 +72,8 @@ export function PowerAtlasApp() {
   // revealed, so first paint is identical to the un-timelined app; scrubbing back
   // only HIDES the campus's build features (display gate, no recompute).
   const [buildPhase, setBuildPhase] = useState<BuildPhase>("operational");
+  // 3D campus massing inset — additive cosmetic overlay, default visible.
+  const [show3D, setShow3D] = useState(true);
   const [data, setData] = useState<Collections>({});
   const [error, setError] = useState<string | null>(null);
   const requested = useRef<Set<string>>(new Set());
@@ -217,6 +223,17 @@ export function PowerAtlasApp() {
                 onPickCampus={setCampus}
               />
               <PhaseTimeline phase={buildPhase} onChange={setBuildPhase} />
+              {show3D ? (
+                <Campus3D phase={buildPhase} onClose={() => setShow3D(false)} />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShow3D(true)}
+                  className="absolute right-4 top-4 z-10 rounded-lg border border-atlas-border bg-atlas-panel/95 px-2.5 py-1.5 text-[11px] text-atlas-muted shadow-lg backdrop-blur hover:text-atlas-text"
+                >
+                  Campus 3D
+                </button>
+              )}
             </>
           ) : (
             <div className="flex h-full items-center justify-center text-sm text-atlas-muted">
