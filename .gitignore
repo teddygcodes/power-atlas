@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+
+# Raw ingestion dumps are large + regenerable; processed/public GeoJSON is committed.
+/data/raw

@@ -1,0 +1,28 @@
+{
+  "region": "georgia-demo",
+  "bbox": [
+    33.4,
+    -84.8,
+    34.3,
+    -83.8
+  ],
+  "source": "OSM Overpass",
+  "sourceUrl": "https://overpass-api.de/api/interpreter",
+  "lastSyncedAt": "2026-05-25T03:08:26.203Z",
+  "rawFeatureCount": 2862,
+  "substationCount": 580,
+  "transmissionLineCount": 2152,
+  "powerPlantCount": 14,
+  "generatorCount": 116,
+  "warnings": [
+    "OSM power infrastructure is community-sourced and may be incomplete.",
+    "Feature proximity does not imply grid connectivity.",
+    "Capacity is unknown unless verified by utility or official study."
+  ],
+  "limitations": [
+    "Substation geometry is predominantly polygons; map markers use computed representative coordinates (centroids).",
+    "Voltage values are raw OSM tag strings and may be missing, unit-inconsistent (e.g. 115000 vs 115kV), or multi-valued (semicolon-delimited).",
+    "Power plants and generators are shown for context only and are not used in dependency resolution.",
+    "Coverage is limited to the queried bounding box; infrastructure outside it is not represented."
+  ]
+}
