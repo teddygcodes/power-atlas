@@ -8,6 +8,8 @@ const ITEMS: { key: keyof LayerVisibility; label: string; swatch: string }[] = [
   { key: "transmission", label: "Transmission Lines", swatch: "bg-signal-transmission" },
   { key: "plants", label: "Power Plants (context)", swatch: "bg-signal-plant" },
   { key: "candidatePath", label: "Candidate Power Path", swatch: "bg-signal-candidate" },
+  { key: "water", label: "Water", swatch: "bg-signal-water" },
+  { key: "waterPath", label: "Candidate Water Path", swatch: "bg-signal-waterCandidate" },
 ];
 
 export function LayerTogglePanel({

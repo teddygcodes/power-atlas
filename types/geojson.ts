@@ -1,4 +1,5 @@
 import type { PowerFeatureProperties } from "./infrastructure";
+import type { WaterFeatureProperties } from "./water";
 
 // Minimal GeoJSON geometry typing — enough for power features without a
 // dependency on @types/geojson. Coordinates are [lng, lat] tuples.
@@ -44,5 +45,21 @@ export interface PowerFeatureCollection {
 }
 
 export function emptyFeatureCollection(): PowerFeatureCollection {
+  return { type: "FeatureCollection", features: [] };
+}
+
+// Water features reuse the same geometry union (it is not power-specific).
+export interface WaterFeature {
+  type: "Feature";
+  geometry: PowerGeometry;
+  properties: WaterFeatureProperties;
+}
+
+export interface WaterFeatureCollection {
+  type: "FeatureCollection";
+  features: WaterFeature[];
+}
+
+export function emptyWaterFeatureCollection(): WaterFeatureCollection {
   return { type: "FeatureCollection", features: [] };
 }

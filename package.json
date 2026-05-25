@@ -12,7 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "ingest:osm-power": "tsx scripts/ingest-osm-power.ts"
+    "ingest:osm-power": "tsx scripts/ingest-osm-power.ts",
+    "ingest:osm-water": "tsx scripts/ingest-osm-water.ts",
+    "ingest:region": "npm run ingest:osm-power && npm run ingest:osm-water"
   },
   "dependencies": {
     "@deck.gl/core": "^9.1.0",

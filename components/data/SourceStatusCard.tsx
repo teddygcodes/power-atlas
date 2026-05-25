@@ -20,6 +20,12 @@ export function SourceStatusCard({ manifest }: { manifest: SourceManifest }) {
           <MetricRow label="Transmission lines" value={manifest.transmissionLineCount.toLocaleString()} />
           <MetricRow label="Power plants" value={manifest.powerPlantCount.toLocaleString()} />
           <MetricRow label="Generators" value={manifest.generatorCount.toLocaleString()} />
+          {manifest.waterFeatureCount != null && (
+            <MetricRow
+              label="Water features"
+              value={manifest.waterFeatureCount.toLocaleString()}
+            />
+          )}
         </div>
       </div>
     </Panel>

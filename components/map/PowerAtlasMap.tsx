@@ -6,15 +6,22 @@ import type { Layer, PickingInfo, MapViewState } from "@deck.gl/core";
 import { Map } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-import type { PowerFeatureCollection, PowerFeature } from "../../types/geojson";
+import type {
+  PowerFeatureCollection,
+  PowerFeature,
+  WaterFeatureCollection,
+} from "../../types/geojson";
 import type { CampusSizeMW } from "../../types/scenario";
 import type { CandidatePowerDependency } from "../../types/dependency";
+import type { CandidateWaterDependency } from "../../types/water";
 import {
   buildInfrastructureLayers,
   type LayerVisibility,
 } from "./PowerInfrastructureLayer";
+import { buildWaterLayers } from "./WaterInfrastructureLayer";
 import { buildCampusLayer } from "./CampusMarker";
 import { buildCandidatePathLayer } from "./CandidatePowerPath";
+import { buildCandidateWaterPath } from "./CandidateWaterPath";
 
 // Free CARTO dark basemap — no API token required. Renders external vector
 // tiles at runtime in the browser. The power infrastructure (deck.gl layers)
@@ -64,34 +71,55 @@ export default function PowerAtlasMap({
   substations,
   transmissionLines,
   powerPlants,
+  water,
   campus,
   campusSizeMW,
   dependency,
+  waterDependency,
   visibility,
   onPickCampus,
 }: {
   substations: PowerFeatureCollection;
   transmissionLines: PowerFeatureCollection;
   powerPlants: PowerFeatureCollection;
+  water: WaterFeatureCollection;
   campus: [number, number];
   campusSizeMW: CampusSizeMW;
   dependency: CandidatePowerDependency | null;
+  waterDependency: CandidateWaterDependency | null;
   visibility: LayerVisibility;
   onPickCampus: (coords: [number, number]) => void;
 }) {
   const layers = useMemo<Layer[]>(() => {
-    const ls = buildInfrastructureLayers({
-      substations,
-      transmissionLines,
-      powerPlants,
-      visibility,
-      candidateFeatureId: dependency?.featureId,
+    // Water underneath power infrastructure.
+    const ls: Layer[] = buildWaterLayers({
+      water,
+      visible: visibility.water,
+      candidateFeatureId: waterDependency?.featureId,
     });
+    ls.push(
+      ...buildInfrastructureLayers({
+        substations,
+        transmissionLines,
+        powerPlants,
+        visibility,
+        candidateFeatureId: dependency?.featureId,
+      }),
+    );
     if (visibility.candidatePath && dependency) {
       ls.push(
         buildCandidatePathLayer({
           campus,
           candidate: dependency.candidateCoordinates,
+          campusSizeMW,
+        }),
+      );
+    }
+    if (visibility.waterPath && waterDependency) {
+      ls.push(
+        buildCandidateWaterPath({
+          campus,
+          candidate: waterDependency.candidateCoordinates,
           campusSizeMW,
         }),
       );
@@ -102,8 +130,10 @@ export default function PowerAtlasMap({
     substations,
     transmissionLines,
     powerPlants,
+    water,
     visibility,
     dependency,
+    waterDependency,
     campus,
     campusSizeMW,
   ]);

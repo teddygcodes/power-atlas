@@ -14,4 +14,8 @@ export interface SourceManifest {
   generatorCount: number;
   warnings: string[];
   limitations: string[];
+  // Water layer (v0.2) — added by the water ingest, merged into the manifest.
+  waterFeatureCount?: number;
+  waterWarnings?: string[];
+  waterLimitations?: string[];
 }

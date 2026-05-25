@@ -1,20 +1,21 @@
-import type { PowerFeature } from "../../types/geojson";
+import type { PowerGeometry } from "../../types/geojson";
 import { getRepresentativeCoordinate } from "./centroid";
 import { haversineKm } from "./distance";
 
-export interface NearestResult {
-  feature: PowerFeature;
+export interface NearestResult<T> {
+  feature: T;
   distanceKm: number;
   coordinates: [number, number]; // the feature's representative coordinate
 }
 
-// Nearest feature to `from` ([lng, lat]) by representative coordinate.
-// Features whose geometry yields no representative coordinate are skipped.
-export function nearestFeature(
+// Nearest feature to `from` ([lng, lat]) by representative coordinate. Generic
+// over the feature type (power or water); only the geometry is read. Features
+// whose geometry yields no representative coordinate are skipped.
+export function nearestFeature<T extends { geometry: PowerGeometry }>(
   from: [number, number],
-  features: PowerFeature[],
-): NearestResult | null {
-  let best: NearestResult | null = null;
+  features: T[],
+): NearestResult<T> | null {
+  let best: NearestResult<T> | null = null;
   for (const feature of features) {
     const coordinates = getRepresentativeCoordinate(feature);
     if (!coordinates) continue;

@@ -1,4 +1,4 @@
-import type { PowerFeature, Position } from "../../types/geojson";
+import type { PowerGeometry, Position } from "../../types/geojson";
 
 // Pure / isomorphic. Returns a single representative [lng, lat] for a feature,
 // or null if none can be derived.
@@ -71,8 +71,9 @@ function planarLength(coords: Position[]): number {
   return len;
 }
 
+// Accepts any geometry-bearing feature (power or water) — only the geometry is used.
 export function getRepresentativeCoordinate(
-  feature: PowerFeature,
+  feature: { geometry: PowerGeometry },
 ): [number, number] | null {
   const g = feature.geometry;
   switch (g.type) {

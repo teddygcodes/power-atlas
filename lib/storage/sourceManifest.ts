@@ -40,3 +40,29 @@ export function buildSourceManifest(params: {
     limitations: [...DEFAULT_LIMITATIONS],
   };
 }
+
+// Water honesty warnings — proximity≠water-rights is the headline (v0.2).
+export const REQUIRED_WATER_WARNINGS = [
+  "Water proximity does not imply water rights, withdrawal capacity, or legal access.",
+  "Sustained availability and seasonal flow are not represented and must be confirmed.",
+  "OSM water data is community-sourced and may be incomplete.",
+] as const;
+
+const DEFAULT_WATER_LIMITATIONS = [
+  "Only named water features are ingested; unnamed ponds and drainage ditches are excluded.",
+  "Water type classing (major river / reservoir / minor stream) is coarse and estimated.",
+  "Actual water demand depends on cooling design, which is not modeled in v0.2.",
+] as const;
+
+// Merge water fields into an existing manifest (idempotent — safe to re-run).
+export function applyWaterToManifest(
+  manifest: SourceManifest,
+  waterFeatureCount: number,
+): SourceManifest {
+  return {
+    ...manifest,
+    waterFeatureCount,
+    waterWarnings: [...REQUIRED_WATER_WARNINGS],
+    waterLimitations: [...DEFAULT_WATER_LIMITATIONS],
+  };
+}

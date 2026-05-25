@@ -26,6 +26,8 @@ const config: Config = {
           plant: "#9b8cce",
           campus: "#f2f4f7",
           candidate: "#ff6b5e",
+          water: "#4aa3e0",
+          waterCandidate: "#7fd2ff",
         },
       },
       fontFamily: {

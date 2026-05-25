@@ -20,6 +20,8 @@ export interface LayerVisibility {
   transmission: boolean;
   plants: boolean;
   candidatePath: boolean;
+  water: boolean;
+  waterPath: boolean;
 }
 
 interface PointDatum {

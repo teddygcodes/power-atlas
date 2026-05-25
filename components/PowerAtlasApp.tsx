@@ -4,15 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 
-import type { PowerFeatureCollection } from "../types/geojson";
+import type { PowerFeatureCollection, WaterFeatureCollection } from "../types/geojson";
 import type { CampusSizeMW } from "../types/scenario";
 import { fetchFeatureCollection } from "../lib/geo/geojson";
 import { resolveCandidatePowerDependency } from "../lib/power/dependencyResolver";
+import { resolveCandidateWaterDependency } from "../lib/water/waterResolver";
 import type { LayerVisibility } from "./map/PowerInfrastructureLayer";
 import { LayerTogglePanel } from "./map/LayerTogglePanel";
 import { ScenarioPanel } from "./power/ScenarioPanel";
 import { PowerHUD } from "./power/PowerHUD";
 import { DependencyWarnings } from "./power/DependencyWarnings";
+import { WaterHUD } from "./water/WaterHUD";
 
 // Map is WebGL/maplibre — render client-only to avoid SSR window access.
 const PowerAtlasMap = dynamic(() => import("./map/PowerAtlasMap"), {
@@ -31,6 +33,7 @@ interface LoadedData {
   substations: PowerFeatureCollection;
   transmissionLines: PowerFeatureCollection;
   powerPlants: PowerFeatureCollection;
+  water: WaterFeatureCollection;
 }
 
 export function PowerAtlasApp() {
@@ -41,6 +44,8 @@ export function PowerAtlasApp() {
     transmission: true,
     plants: false,
     candidatePath: true,
+    water: true,
+    waterPath: true,
   });
   const [data, setData] = useState<LoadedData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,9 +57,17 @@ export function PowerAtlasApp() {
       fetchFeatureCollection(`${base}/substations.geojson`),
       fetchFeatureCollection(`${base}/transmission-lines.geojson`),
       fetchFeatureCollection(`${base}/power-plants.geojson`),
+      fetchFeatureCollection(`${base}/water.geojson`),
     ])
-      .then(([substations, transmissionLines, powerPlants]) => {
-        if (active) setData({ substations, transmissionLines, powerPlants });
+      .then(([substations, transmissionLines, powerPlants, water]) => {
+        if (active)
+          setData({
+            substations,
+            transmissionLines,
+            powerPlants,
+            // Structurally identical FeatureCollection; properties differ.
+            water: water as unknown as WaterFeatureCollection,
+          });
       })
       .catch((e) => active && setError(String(e)));
     return () => {
@@ -68,6 +81,14 @@ export function PowerAtlasApp() {
       scenario: { campusSizeMW, coordinates: campus },
       substations: data.substations,
       transmissionLines: data.transmissionLines,
+    });
+  }, [data, campusSizeMW, campus]);
+
+  const waterDependency = useMemo(() => {
+    if (!data) return null;
+    return resolveCandidateWaterDependency({
+      scenario: { campusSizeMW, coordinates: campus },
+      waterFeatures: data.water,
     });
   }, [data, campusSizeMW, campus]);
 
@@ -134,9 +155,11 @@ export function PowerAtlasApp() {
               substations={data.substations}
               transmissionLines={data.transmissionLines}
               powerPlants={data.powerPlants}
+              water={data.water}
               campus={campus}
               campusSizeMW={campusSizeMW}
               dependency={dependency}
+              waterDependency={waterDependency}
               visibility={visibility}
               onPickCampus={setCampus}
             />
@@ -150,6 +173,7 @@ export function PowerAtlasApp() {
         <aside className="w-80 shrink-0 space-y-3 overflow-y-auto border-l border-atlas-border p-3">
           <PowerHUD dependency={dependency} campusSizeMW={campusSizeMW} />
           {dependency && <DependencyWarnings warnings={dependency.warnings} />}
+          <WaterHUD dependency={waterDependency} />
         </aside>
       </div>
     </div>

@@ -57,6 +57,8 @@ export function IngestionCenter() {
           <DataLimitationsPanel
             warnings={manifest.warnings}
             limitations={manifest.limitations}
+            waterWarnings={manifest.waterWarnings}
+            waterLimitations={manifest.waterLimitations}
           />
         </div>
       )}
