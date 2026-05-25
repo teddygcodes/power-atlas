@@ -29,6 +29,9 @@ const config: Config = {
           water: "#4aa3e0",
           waterCandidate: "#7fd2ff",
           flood: "#d14b4b",
+          // Screening "worth investigating" — a NEUTRAL teal, deliberately NOT a
+          // traffic-light green (green=go would imply a verdict, not a screen).
+          screening: "#56b6c2",
         },
       },
       fontFamily: {

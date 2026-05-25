@@ -16,7 +16,9 @@ import type { CampusSizeMW } from "../../types/scenario";
 import type { CandidatePowerDependency } from "../../types/dependency";
 import type { CandidateWaterDependency } from "../../types/water";
 import type { BuildPhase } from "../../types/timeline";
+import type { ScreeningResult } from "../../types/screening";
 import { revealForPhase } from "../../lib/timeline/phases";
+import { buildScreeningLayers } from "./ScreeningLayer";
 import {
   buildInfrastructureLayers,
   type LayerVisibility,
@@ -83,7 +85,10 @@ export default function PowerAtlasMap({
   waterDependency,
   visibility,
   buildPhase,
+  screeningResult,
+  selectedCell,
   onPickCampus,
+  onPickCell,
 }: {
   substations: PowerFeatureCollection;
   transmissionLines: PowerFeatureCollection;
@@ -96,7 +101,10 @@ export default function PowerAtlasMap({
   waterDependency: CandidateWaterDependency | null;
   visibility: LayerVisibility;
   buildPhase: BuildPhase;
+  screeningResult: ScreeningResult | null;
+  selectedCell: number | null;
   onPickCampus: (coords: [number, number]) => void;
+  onPickCell: (index: number) => void;
 }) {
   const layers = useMemo<Layer[]>(() => {
     // The timeline only sequences the REVEAL of the campus's own build features
@@ -105,12 +113,21 @@ export default function PowerAtlasMap({
     // app. The background world below follows its user toggles, unphased.
     const reveal = revealForPhase(buildPhase);
 
-    // Water + flood (area layers) underneath the point/line infrastructure.
-    const ls: Layer[] = buildWaterLayers({
-      water,
-      visible: visibility.water,
-      candidateFeatureId: waterDependency?.featureId,
+    // Screening grid sits at the very bottom (translucent), so infrastructure
+    // points/lines stay legible on top of it.
+    const ls: Layer[] = buildScreeningLayers({
+      result: screeningResult,
+      visible: visibility.screening,
+      selectedIndex: selectedCell,
     });
+    // Water + flood (area layers) underneath the point/line infrastructure.
+    ls.push(
+      ...buildWaterLayers({
+        water,
+        visible: visibility.water,
+        candidateFeatureId: waterDependency?.featureId,
+      }),
+    );
     ls.push(...buildFloodLayers({ flood: floodZones, visible: visibility.flood }));
     ls.push(
       ...buildInfrastructureLayers({
@@ -153,15 +170,23 @@ export default function PowerAtlasMap({
     campus,
     campusSizeMW,
     buildPhase,
+    screeningResult,
+    selectedCell,
   ]);
 
   const handleClick = useCallback(
     (info: PickingInfo) => {
+      // A click on the screening grid opens that cell's breakdown (not a campus move).
+      const obj = info.object as { index?: number } | undefined;
+      if (info.layer?.id === "screening-grid" && obj && typeof obj.index === "number") {
+        onPickCell(obj.index);
+        return;
+      }
       if (info.coordinate) {
         onPickCampus([info.coordinate[0], info.coordinate[1]]);
       }
     },
-    [onPickCampus],
+    [onPickCampus, onPickCell],
   );
 
   return (

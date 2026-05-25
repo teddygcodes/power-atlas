@@ -35,6 +35,9 @@ import { WaterHUD } from "./water/WaterHUD";
 import { FloodHUD } from "./flood/FloodHUD";
 import { PhaseTimeline } from "./timeline/PhaseTimeline";
 import { ExplainDrawer } from "./explain/ExplainDrawer";
+import { screenRegion, SCREENING_CAVEAT } from "../lib/screening/screen";
+import { ScreeningDrawer } from "./screening/ScreeningDrawer";
+import { ScreeningCaveatBanner } from "./screening/ScreeningCaveatBanner";
 
 // Map is WebGL/maplibre — render client-only to avoid SSR window access.
 const PowerAtlasMap = dynamic(() => import("./map/PowerAtlasMap"), {
@@ -74,6 +77,8 @@ export function PowerAtlasApp() {
     water: false,
     waterPath: false,
     flood: false,
+    // Grid screening default OFF; enabling it lazily loads water + flood too.
+    screening: false,
   });
   // Construction-timeline phase. Default "operational" = every campus feature
   // revealed, so first paint is identical to the un-timelined app; scrubbing back
@@ -83,6 +88,8 @@ export function PowerAtlasApp() {
   const [show3D, setShow3D] = useState(true);
   // Explainability drawer: which layer's existing output to surface (read-only).
   const [explainTarget, setExplainTarget] = useState<"power" | "water" | "flood" | null>(null);
+  // Site-screening: which grid cell's per-dimension breakdown is open (read-only).
+  const [selectedCell, setSelectedCell] = useState<number | null>(null);
   const [data, setData] = useState<Collections>({});
   const [error, setError] = useState<string | null>(null);
   const requested = useRef<Set<string>>(new Set());
@@ -109,7 +116,11 @@ export function PowerAtlasApp() {
         .then((powerPlants) => setData((d) => ({ ...d, powerPlants })))
         .catch((e) => console.error("power-plants load failed", e));
     }
-    if ((visibility.water || visibility.waterPath) && !seen.has("water")) {
+    // Screening needs all four datasets, so it also triggers the water + flood loads.
+    if (
+      (visibility.water || visibility.waterPath || visibility.screening) &&
+      !seen.has("water")
+    ) {
       seen.add("water");
       fetchFeatureCollection(`${base}/water.geojson`)
         .then((fc) =>
@@ -117,7 +128,7 @@ export function PowerAtlasApp() {
         )
         .catch((e) => console.error("water load failed", e));
     }
-    if (visibility.flood && !seen.has("flood")) {
+    if ((visibility.flood || visibility.screening) && !seen.has("flood")) {
       seen.add("flood");
       fetchFeatureCollection(`${base}/flood-zones.geojson`)
         .then((fc) =>
@@ -176,6 +187,36 @@ export function PowerAtlasApp() {
     }
     return null;
   }, [explainTarget, dependency, waterDependency, floodRisk, data]);
+
+  // Site-screening runs the EXISTING resolvers over a coarse grid for the current
+  // MW + cooling, on demand. Null until enabled AND all four datasets are loaded.
+  const screeningResult = useMemo(() => {
+    if (!visibility.screening) return null;
+    if (!data.substations || !data.transmissionLines || !data.water || !data.flood) {
+      return null;
+    }
+    return screenRegion({
+      campusSizeMW,
+      coolingType,
+      substations: data.substations,
+      transmissionLines: data.transmissionLines,
+      water: data.water,
+      flood: data.flood,
+    });
+  }, [
+    visibility.screening,
+    campusSizeMW,
+    coolingType,
+    data.substations,
+    data.transmissionLines,
+    data.water,
+    data.flood,
+  ]);
+
+  // Close the screening cell drawer whenever screening is turned off.
+  useEffect(() => {
+    if (!visibility.screening) setSelectedCell(null);
+  }, [visibility.screening]);
 
   const toggleLayer = useCallback((key: keyof LayerVisibility) => {
     setVisibility((v) => ({ ...v, [key]: !v[key] }));
@@ -251,8 +292,14 @@ export function PowerAtlasApp() {
                 waterDependency={waterDependency}
                 visibility={visibility}
                 buildPhase={buildPhase}
+                screeningResult={screeningResult}
+                selectedCell={selectedCell}
                 onPickCampus={setCampus}
+                onPickCell={setSelectedCell}
               />
+              {visibility.screening && (
+                <ScreeningCaveatBanner caveat={SCREENING_CAVEAT} />
+              )}
               <PhaseTimeline phase={buildPhase} onChange={setBuildPhase} />
               {show3D ? (
                 <Campus3D phase={buildPhase} onClose={() => setShow3D(false)} />
@@ -292,6 +339,16 @@ export function PowerAtlasApp() {
       {explainModel && (
         <ExplainDrawer model={explainModel} onClose={() => setExplainTarget(null)} />
       )}
+
+      {screeningResult &&
+        selectedCell != null &&
+        selectedCell < screeningResult.cells.length && (
+          <ScreeningDrawer
+            cell={screeningResult.cells[selectedCell]}
+            caveat={screeningResult.caveat}
+            onClose={() => setSelectedCell(null)}
+          />
+        )}
     </div>
   );
 }

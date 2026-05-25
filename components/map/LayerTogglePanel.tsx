@@ -27,6 +27,10 @@ const GROUPS: { heading: string; items: ToggleItem[] }[] = [
     heading: "Risk",
     items: [{ key: "flood", label: "Flood Zones (FEMA)", swatch: "bg-signal-flood" }],
   },
+  {
+    heading: "Screening",
+    items: [{ key: "screening", label: "Grid Screening (beta)", swatch: "bg-signal-screening" }],
+  },
 ];
 
 export function LayerTogglePanel({
