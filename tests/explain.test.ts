@@ -123,6 +123,32 @@ describe("explainFlood surfaces real resolver output", () => {
   });
 });
 
+describe("Not-claimed + Verification-needed honesty sections", () => {
+  it("power exposes the explicit not-claimed + verification-needed copy", () => {
+    const m = explainPower(powerDep);
+    expect(m.notClaimed.length).toBeGreaterThan(0);
+    expect(m.verificationNeeded.length).toBeGreaterThan(0);
+    expect(m.notClaimed).toContain("Not available capacity");
+    expect(m.notClaimed).toContain("Not official grid connectivity");
+    expect(m.verificationNeeded).toContain("Utility interconnection study");
+  });
+
+  it("water + flood also carry non-empty, layer-appropriate sections", () => {
+    const w = explainWater(waterDep);
+    expect(w.notClaimed.join(" ")).toMatch(/water rights|withdrawal/i);
+    expect(w.verificationNeeded.length).toBeGreaterThan(0);
+    const f = explainFlood(floodRisk);
+    expect(f.notClaimed.join(" ")).toMatch(/FEMA|base-flood|safety/i);
+    expect(f.verificationNeeded.join(" ")).toMatch(/msc\.fema\.gov/i);
+  });
+
+  it("the honesty copy introduces NO fabricated magnitude", () => {
+    for (const m of [explainPower(powerDep), explainWater(waterDep), explainFlood(floodRisk)]) {
+      expect([...m.notClaimed, ...m.verificationNeeded].join(" | ")).not.toMatch(NO_MAGNITUDE);
+    }
+  });
+});
+
 describe("explain adds NO fabricated magnitude (capacity/spec numbers)", () => {
   it("the labels/posture the drawer adds carry no MW/MWh/kV/gpd/MGD/% value", () => {
     for (const m of [explainPower(powerDep), explainWater(waterDep), explainFlood(floodRisk)]) {

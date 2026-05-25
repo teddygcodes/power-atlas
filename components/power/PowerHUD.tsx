@@ -70,19 +70,24 @@ export function PowerHUD({
             />
           </div>
 
-          <div className="flex flex-wrap gap-1.5">
-            <Badge tone="community" title={`Source confidence: ${dependency.sourceConfidence}`}>
-              Source: {dependency.sourceConfidence}
-            </Badge>
-            <Badge tone="derived" title="Path confidence">
-              Path: {dependency.pathConfidence}
-            </Badge>
-            <Badge tone="unknown" title="Capacity is not claimed — verify with utility">
-              Capacity: {dependency.capacityStatus}
-            </Badge>
+          <div className="border-t border-atlas-border pt-2">
+            <p className="mb-1.5 text-[11px] uppercase tracking-wider text-atlas-muted">
+              Confidence
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              <Badge tone="community" title={`Source confidence: ${dependency.sourceConfidence}`}>
+                Source: {dependency.sourceConfidence}
+              </Badge>
+              <Badge tone="derived" title="Path confidence">
+                Path: {dependency.pathConfidence}
+              </Badge>
+              <Badge tone="unknown" title="Capacity is not claimed — verify with utility">
+                Capacity: {dependency.capacityStatus}
+              </Badge>
+            </div>
           </div>
 
-          <div>
+          <div className="border-t border-atlas-border pt-2">
             <p className="mb-1 text-[11px] uppercase tracking-wider text-atlas-muted">
               Likely Infrastructure Requirement
             </p>
@@ -91,7 +96,7 @@ export function PowerHUD({
             </p>
           </div>
 
-          <div>
+          <div className="border-t border-atlas-border pt-2">
             <p className="mb-1 text-[11px] uppercase tracking-wider text-atlas-muted">
               Reason Codes
             </p>

@@ -38,6 +38,7 @@ import { ExplainDrawer } from "./explain/ExplainDrawer";
 import { screenRegion, SCREENING_CAVEAT } from "../lib/screening/screen";
 import { ScreeningDrawer } from "./screening/ScreeningDrawer";
 import { ScreeningCaveatBanner } from "./screening/ScreeningCaveatBanner";
+import { DataConfidenceLegend } from "./ui/DataConfidenceLegend";
 
 // Map is WebGL/maplibre — render client-only to avoid SSR window access.
 const PowerAtlasMap = dynamic(() => import("./map/PowerAtlasMap"), {
@@ -262,6 +263,7 @@ export function PowerAtlasApp() {
             onReset={() => setCampus(DEFAULT_CAMPUS)}
           />
           <LayerTogglePanel visibility={visibility} onToggle={toggleLayer} />
+          <DataConfidenceLegend />
         </aside>
 
         <div className="relative min-w-0 flex-1 bg-atlas-bg">

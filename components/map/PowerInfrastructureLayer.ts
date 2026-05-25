@@ -67,9 +67,13 @@ export function buildInfrastructureLayers(params: {
   powerPlants: PowerFeatureCollection;
   visibility: LayerVisibility;
   candidateFeatureId?: string;
+  // When the candidate path is active, fade the non-candidate substations so the
+  // selected candidate stands out.
+  dimNonCandidate?: boolean;
 }): Layer[] {
-  const { visibility, candidateFeatureId } = params;
+  const { visibility, candidateFeatureId, dimNonCandidate } = params;
   const layers: Layer[] = [];
+  const otherSubstationAlpha = dimNonCandidate ? 110 : 210;
 
   // Transmission lines first (drawn underneath the point layers).
   if (visibility.transmission) {
@@ -117,7 +121,7 @@ export function buildInfrastructureLayers(params: {
         getFillColor: (d) =>
           d.feature.properties.id === candidateFeatureId
             ? [...COLORS.candidate, 255]
-            : [...COLORS.substation, 210],
+            : [...COLORS.substation, otherSubstationAlpha],
         getRadius: (d) =>
           d.feature.properties.id === candidateFeatureId ? 7 : 4,
         radiusUnits: "pixels",
@@ -128,7 +132,7 @@ export function buildInfrastructureLayers(params: {
         lineWidthMinPixels: 1,
         pickable: true,
         updateTriggers: {
-          getFillColor: candidateFeatureId,
+          getFillColor: [candidateFeatureId, otherSubstationAlpha],
           getRadius: candidateFeatureId,
         },
       }),

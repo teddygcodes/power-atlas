@@ -25,8 +25,9 @@ import {
 } from "./PowerInfrastructureLayer";
 import { buildWaterLayers } from "./WaterInfrastructureLayer";
 import { buildFloodLayers } from "./FloodLayer";
-import { buildCampusLayer } from "./CampusMarker";
+import { buildCampusLayers } from "./CampusMarker";
 import { buildCandidatePathLayer } from "./CandidatePowerPath";
+import { buildCandidateHighlightLayers } from "./CandidateHighlight";
 import { buildCandidateWaterPath } from "./CandidateWaterPath";
 
 // Free CARTO dark basemap — no API token required. Renders external vector
@@ -136,15 +137,17 @@ export default function PowerAtlasMap({
         powerPlants,
         visibility,
         candidateFeatureId: dependency?.featureId,
+        dimNonCandidate: visibility.candidatePath && !!dependency?.featureId,
       }),
     );
     if (visibility.candidatePath && dependency && reveal.candidatePowerPath) {
       ls.push(
-        buildCandidatePathLayer({
+        ...buildCandidatePathLayer({
           campus,
           candidate: dependency.candidateCoordinates,
           campusSizeMW,
         }),
+        ...buildCandidateHighlightLayers({ candidate: dependency.candidateCoordinates }),
       );
     }
     if (visibility.waterPath && waterDependency && reveal.candidateWaterPath) {
@@ -156,7 +159,7 @@ export default function PowerAtlasMap({
         }),
       );
     }
-    ls.push(buildCampusLayer(campus));
+    ls.push(...buildCampusLayers(campus, campusSizeMW));
     return ls;
   }, [
     substations,

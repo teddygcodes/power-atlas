@@ -37,7 +37,43 @@ export interface ExplainModel {
   reasonCodes: ExplainReasonCode[];
   rawTags?: Record<string, string>;
   caveats: string[];
+  // Static honesty framing — what this output explicitly does NOT assert, and what
+  // a real decision still requires. Constant copy per layer, never computed.
+  notClaimed: string[];
+  verificationNeeded: string[];
 }
+
+const POWER_NOT_CLAIMED = [
+  "Not official grid connectivity",
+  "Not available capacity",
+  "Not utility approval",
+  "Not an engineering study",
+];
+const POWER_VERIFICATION = [
+  "Utility interconnection study",
+  "Actual voltage / capacity confirmation",
+  "Site-specific engineering review",
+];
+const WATER_NOT_CLAIMED = [
+  "Not water rights or withdrawal capacity",
+  "Not regulatory or utility approval",
+  "Not an engineering study",
+];
+const WATER_VERIFICATION = [
+  "Water-rights / withdrawal permitting review",
+  "Sustained-availability and seasonal-flow confirmation",
+  "Site-specific engineering review",
+];
+const FLOOD_NOT_CLAIMED = [
+  "Not a current or authoritative FEMA determination",
+  "Not a base-flood elevation",
+  "Not a guarantee of safety (absence of a mapped zone is not proof of no risk)",
+];
+const FLOOD_VERIFICATION = [
+  "Official FEMA Flood Map Service Center lookup (msc.fema.gov)",
+  "Site survey / elevation certificate",
+  "Site-specific engineering review",
+];
 
 // Faithful restatements of the EXACT reason-code literals the resolvers emit.
 // These rephrase the existing code; they add no new semantics or claims.
@@ -129,6 +165,8 @@ export function explainPower(
     reasonCodes: reasonCodes(dep.reasonCodes),
     rawTags,
     caveats: dep.warnings,
+    notClaimed: POWER_NOT_CLAIMED,
+    verificationNeeded: POWER_VERIFICATION,
   };
 }
 
@@ -155,6 +193,8 @@ export function explainWater(
     reasonCodes: reasonCodes(dep.reasonCodes),
     rawTags,
     caveats: dep.warnings,
+    notClaimed: WATER_NOT_CLAIMED,
+    verificationNeeded: WATER_VERIFICATION,
   };
 }
 
@@ -191,5 +231,7 @@ export function explainFlood(risk: CampusFloodRisk): ExplainModel {
     reasonCodes: reasonCodes(risk.reasonCodes),
     // Flood output carries no featureId → no rawTags surfaced (by design).
     caveats: risk.warnings,
+    notClaimed: FLOOD_NOT_CLAIMED,
+    verificationNeeded: FLOOD_VERIFICATION,
   };
 }

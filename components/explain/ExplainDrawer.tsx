@@ -115,6 +115,34 @@ export function ExplainDrawer({
               ))}
             </ul>
           </div>
+
+          <div className="rounded border border-signal-candidate/30 bg-signal-candidate/5 p-2">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-signal-candidate">
+              Not claimed
+            </p>
+            <ul className="space-y-1">
+              {model.notClaimed.map((c) => (
+                <li key={c} className="flex gap-2 text-[11px] leading-snug text-atlas-text">
+                  <span aria-hidden className="mt-[1px] shrink-0 text-signal-candidate">✕</span>
+                  <span>{c}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded border border-atlas-border bg-atlas-panelRaised p-2">
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-atlas-muted">
+              Verification needed
+            </p>
+            <ul className="space-y-1">
+              {model.verificationNeeded.map((v) => (
+                <li key={v} className="flex gap-2 text-[11px] leading-snug text-atlas-text">
+                  <span aria-hidden className="mt-[1px] shrink-0 text-atlas-muted">▢</span>
+                  <span>{v}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </aside>
     </div>
