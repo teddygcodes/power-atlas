@@ -5,9 +5,10 @@
 **AI Infrastructure Site → Power & Water Visualizer** — a public-data planning simulator.
 
 Power Atlas ingests real OpenStreetMap infrastructure for a region and visualizes **candidate
-dependencies** from a hypothetical AI data-center campus to the nearest *plausible* power and
-water sources — with rigorously honest data-confidence labeling. It is a visualization and
-exploration tool, not an engineering study.
+dependencies** from a hypothetical AI data-center campus to the nearest *plausible* power and water
+sources — and shows how a campus choice in one layer (cooling type) **cascades** into another (water
+demand). It is a visualization and exploration tool, not an engineering study, with rigorously
+honest data-confidence labeling throughout.
 
 ---
 
@@ -20,28 +21,34 @@ exploration tool, not an engineering study.
 
 ---
 
-## What it does (v0.2)
+## What it does (v0.3)
 
 - **Ingests real OSM data** via the Overpass API for a configurable bounding box (default: the
-  Atlanta / North Georgia corridor) and writes local GeoJSON. Two layers: **power** (substations,
-  transmission lines, power plants) and **water** (named rivers, reservoirs/lakes, streams).
-- **Renders** both layers on a dark MapLibre + deck.gl map, with per-layer toggles.
-- **Resolves a candidate power dependency and a candidate water dependency** for a campus location
-  + size (50 / 100 / 250 / 500 MW): the nearest *plausible* source, reporting distance, the source
-  type / raw voltage, a load class, reason codes, and caveats.
-- **Load-aware plausibility:** a large campus prefers a transmission-voltage substation over a
-  closer low-voltage one, and a major river/reservoir over a closer minor stream — but a
+  Atlanta / North Georgia corridor) and writes local GeoJSON. Two infrastructure layers: **power**
+  (substations, transmission lines, power plants) and **water** (named rivers, reservoirs/lakes,
+  streams).
+- **Renders** both layers on a dark MapLibre + deck.gl map with per-layer toggles. Layers load **on
+  demand** — water is fetched only when its layer is enabled — so first paint stays fast.
+- **Resolves a candidate power dependency and a candidate water dependency** for a campus location +
+  size (50 / 100 / 250 / 500 MW): the nearest *plausible* source, reporting distance, the source
+  type / raw voltage, a load/demand class, reason codes, and caveats.
+- **Cooling is a scenario input** (air / hybrid / evaporative) — the first cross-layer interaction.
+  It refines a qualitative **water-demand class** (low / moderate / high) from campus size + cooling,
+  which feeds the water resolver. On the same campus, switch air → evaporative and watch a nearby
+  stream flip from plausible to insufficient — a step toward a digital twin, not two parallel maps.
+- **Load-aware plausibility:** a large / high-demand campus prefers a transmission-voltage substation
+  over a closer low-voltage one, and a major river/reservoir over a closer minor stream — but a
   less-suitable source is never hidden; it is surfaced and flagged.
-- **Click to reposition** the campus and switch size; resolvers, HUDs, and candidate paths update
-  live.
-- **Surfaces provenance** in an Ingestion Center (`/data`): source-manifest counts, bbox, last
-  sync, and per-layer warnings + limitations.
+- **Click to reposition** the campus, switch size, or change cooling; resolvers, HUDs, and candidate
+  paths update live.
+- **Surfaces provenance** in an Ingestion Center (`/data`): source-manifest counts, bbox, last sync,
+  and per-layer warnings + limitations.
 
 ## What it does NOT do
 
-Cooling, flood risk, construction timeline, stress scenarios, 3D campus assets, or full
-digital-twin modes. It does **not** model connectivity, capacity, interconnection feasibility, or
-water rights — and never claims to. There is no live Overpass call from the browser.
+Flood risk, construction timeline, stress scenarios, 3D campus assets, or full digital-twin modes.
+It does **not** model grid connectivity, capacity, interconnection feasibility, water rights, or
+water-consumption magnitudes — and never claims to. There is no live Overpass call from the browser.
 
 ---
 
@@ -53,8 +60,8 @@ Requires Node 18+ (developed on Node 24).
 npm install
 ```
 
-The default `georgia-demo` dataset (power + water GeoJSON) is **committed to the repo on
-purpose**, so the app runs immediately after install — no ingestion needed to see the map.
+The default `georgia-demo` dataset (power + water GeoJSON) is **committed to the repo on purpose**,
+so the app runs immediately after install — no ingestion needed to see the map.
 
 ## Run
 
@@ -67,9 +74,10 @@ npm test           # unit tests (vitest)
 npm run coverage   # coverage report (no threshold gate)
 ```
 
-Tests cover the pure core — the power and water resolvers, voltage/water classing, polygon
-centroid, nearest-feature search, load classes, and warnings — against **real-data fixtures**, and
-run in CI on every push.
+Tests (77, all green in CI on every push) cover the pure core against **real-data fixtures** — the
+power and water resolvers, voltage/water classing, the cooling → water-demand mapping and its
+cascade, polygon centroid, nearest-feature search, geometry simplification, load classes, and
+warnings.
 
 ## Ingestion
 
@@ -84,8 +92,10 @@ npm run ingest:region -- --region=my-area --bbox=33.4,-84.8,34.3,-83.8
 `public/geojson/<region>/`: `substations.geojson`, `transmission-lines.geojson`,
 `power-plants.geojson` (plants + generators, context only), `water.geojson`, and a merged
 `source-manifest.json`. Raw Overpass dumps go to `data/raw/<region>/` (gitignored). Water ingests
-**named features only** (rivers / reservoirs / streams), dropping the large unnamed pond/ditch
-tail. To point the UI at a different region, change `REGION` in `components/PowerAtlasApp.tsx`.
+**named features only** (rivers / reservoirs / streams), dropping the large unnamed pond/ditch tail.
+Geometry is simplified at ingest to shrink the committed files (analysis is unaffected — see below).
+To point the UI at a different region, change `REGION` in `components/PowerAtlasApp.tsx`. (Cooling is
+a scenario input, not ingested — there is nothing to scrape.)
 
 > **Note:** Overpass rejects the default HTTP-client User-Agent with `406 Not Acceptable`; the
 > client sends an explicit identifying User-Agent (also Overpass usage-policy etiquette). If the
@@ -105,8 +115,8 @@ In Power Atlas:
   browser context**. If ingestion code is ever accidentally imported into a client component, the
   build breaks loudly instead of silently shipping node-only code (and its deps) to the client.
 - The browser only ever `fetch`es the **local** GeoJSON files from `public/`.
-- Shared logic in `lib/geo/*`, `lib/power/*`, and `lib/water/*` is pure and isomorphic (no
-  node-only imports), so it runs in both the ingest script and the browser without modification.
+- Shared logic in `lib/geo/*`, `lib/power/*`, `lib/water/*`, and `lib/cooling/*` is pure and
+  isomorphic (no node-only imports), so it runs in both the ingest script and the browser unchanged.
 
 Verified at build time: `overpass-api.de` and `osmtogeojson` do not appear in the client bundle.
 
@@ -131,14 +141,20 @@ surfaced with a warning.
 - **Power** classes the raw `voltage` tag (transmission / sub-transmission / distribution). The raw
   string is preserved **verbatim** (`115000`, `115kV`, `115000;46000`) and never parsed for display.
   Power plants and generators are context only, never resolver inputs.
-- **Water** classes type (major river / reservoir-lake / minor stream). No flow or capacity numbers
-  are ever produced.
-- **Water demand is keyed off campus MW as a rough proxy only** — cooling is not modeled in v0.2;
-  treat MW→water as a placeholder, not a real relationship.
+- **Water** classes type (major river / reservoir-lake / minor stream). No flow or consumption
+  numbers are ever produced.
+- **Cooling → water demand:** cooling type (air / hybrid / evaporative) plus campus size map to a
+  qualitative demand class (low / moderate / high) that sets the water plausibility threshold. This
+  is **direction and class only — never a consumption magnitude.** Actual water use depends on
+  climate, cooling design, and load factor, which are not modeled; treat MW + cooling → demand as a
+  deliberate placeholder, not a real relationship. Cooling does **not** affect power.
 
-**Representative coordinates:** polygons (most substations, reservoirs) use the area-weighted
-centroid of the exterior ring; lines (transmission, rivers, streams) use a midpoint; points use
-themselves.
+**Representative coordinates & geometry.** Each feature's analysis coordinate (`repCoord`) is
+computed from **full-resolution** geometry at ingest — polygons (most substations, reservoirs) use
+the area-weighted exterior-ring centroid, lines (transmission, rivers, streams) use a midpoint, and
+points use themselves. The committed *display* geometry is then simplified (Douglas-Peucker +
+coordinate rounding) to keep the GeoJSON small; the resolver always reads the stored full-res
+`repCoord`, so simplification can never move a candidate or a distance.
 
 ---
 
@@ -147,8 +163,11 @@ themselves.
 - OSM infrastructure data is community-sourced and may be incomplete.
 - **Proximity does not imply connectivity (power) or water rights / withdrawal capacity (water).**
   The nearest visible source may not be the real interconnection or supply point.
-- Capacity is unknown unless verified by a utility or official study.
+- Capacity is unknown unless verified by a utility or official study; **no consumption magnitudes**
+  (gallons/day, MGD, MW-served, %) are ever shown.
+- **Cooling → water demand is qualitative only** — a placeholder direction, not modeled consumption.
 - Voltage tags may be missing, unit-inconsistent, or multi-valued; water ingests named features only.
+- Geometry is simplified for rendering and is not survey-accurate (analysis uses the full-res repCoord).
 - Coverage is limited to the queried bounding box.
 - The basemap loads free CARTO vector tiles at runtime (requires internet in the browser); the
   infrastructure data itself is always local.
@@ -161,15 +180,16 @@ themselves.
 app/                      Next.js App Router pages (/ and /data)
 components/
   map/                    PowerAtlasMap + power & water deck.gl layers, candidate paths, toggles
-  power/                  ScenarioPanel, PowerHUD, DependencyWarnings
+  power/                  ScenarioPanel (MW + cooling), PowerHUD, DependencyWarnings
   water/                  WaterHUD
   data/                   IngestionCenter, SourceStatusCard, DataLimitationsPanel
   ui/                     Panel, Badge, MetricRow
 lib/
   ingestion/osm/          Overpass query builder, client (server-only), power + water normalizers
-  geo/                    distance, centroid, nearest, bbox, geojson  (pure / isomorphic)
+  geo/                    distance, centroid (+ repCoord helper), nearest, bbox, geojson, simplify
   power/                  voltageClass, loadClasses, dependencyResolver, powerWarnings
   water/                  waterClass, waterResolver, waterWarnings
+  cooling/                waterDemand  (cooling type + MW → qualitative water-demand class)
   storage/                local GeoJSON writers (server-only), manifest builder
   serverOnly.ts           browser-bundle guard
 scripts/                  ingest-osm-power.ts, ingest-osm-water.ts
