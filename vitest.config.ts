@@ -18,6 +18,7 @@ export default defineConfig({
         "lib/flood/**",
         "lib/timeline/**",
         "lib/campus/**",
+        "lib/explain/**",
       ],
       // Report only — NO thresholds. The consciously-uncovered centroid edge
       // branches (zero-area, 2-vertex, unknown geometry) must not fail CI.

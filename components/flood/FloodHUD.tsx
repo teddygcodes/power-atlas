@@ -17,7 +17,13 @@ const SEVERITY_LABEL: Record<FloodSeverity, string> = {
   unknown: "Unknown",
 };
 
-export function FloodHUD({ risk }: { risk: CampusFloodRisk | null }) {
+export function FloodHUD({
+  risk,
+  onExplain,
+}: {
+  risk: CampusFloodRisk | null;
+  onExplain: () => void;
+}) {
   return (
     <Panel
       title="Flood Risk (FEMA NFHL)"
@@ -80,6 +86,14 @@ export function FloodHUD({ risk }: { risk: CampusFloodRisk | null }) {
               ))}
             </ul>
           </div>
+
+          <button
+            type="button"
+            onClick={onExplain}
+            className="w-full rounded border border-atlas-border bg-atlas-panelRaised px-2 py-1.5 text-[11px] text-atlas-muted hover:text-atlas-text"
+          >
+            Explain this risk ▸
+          </button>
         </div>
       )}
     </Panel>

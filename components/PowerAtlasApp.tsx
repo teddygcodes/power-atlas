@@ -20,6 +20,12 @@ import { fetchFeatureCollection } from "../lib/geo/geojson";
 import { resolveCandidatePowerDependency } from "../lib/power/dependencyResolver";
 import { resolveCandidateWaterDependency } from "../lib/water/waterResolver";
 import { resolveCampusFloodRisk } from "../lib/flood/floodResolver";
+import {
+  explainPower,
+  explainWater,
+  explainFlood,
+  findFeatureRawTags,
+} from "../lib/explain/explain";
 import type { LayerVisibility } from "./map/PowerInfrastructureLayer";
 import { LayerTogglePanel } from "./map/LayerTogglePanel";
 import { ScenarioPanel } from "./power/ScenarioPanel";
@@ -28,6 +34,7 @@ import { DependencyWarnings } from "./power/DependencyWarnings";
 import { WaterHUD } from "./water/WaterHUD";
 import { FloodHUD } from "./flood/FloodHUD";
 import { PhaseTimeline } from "./timeline/PhaseTimeline";
+import { ExplainDrawer } from "./explain/ExplainDrawer";
 
 // Map is WebGL/maplibre — render client-only to avoid SSR window access.
 const PowerAtlasMap = dynamic(() => import("./map/PowerAtlasMap"), {
@@ -74,6 +81,8 @@ export function PowerAtlasApp() {
   const [buildPhase, setBuildPhase] = useState<BuildPhase>("operational");
   // 3D campus massing inset — additive cosmetic overlay, default visible.
   const [show3D, setShow3D] = useState(true);
+  // Explainability drawer: which layer's existing output to surface (read-only).
+  const [explainTarget, setExplainTarget] = useState<"power" | "water" | "flood" | null>(null);
   const [data, setData] = useState<Collections>({});
   const [error, setError] = useState<string | null>(null);
   const requested = useRef<Set<string>>(new Set());
@@ -146,6 +155,28 @@ export function PowerAtlasApp() {
     return resolveCampusFloodRisk({ scenario, floodZones: data.flood });
   }, [data.flood, scenario]);
 
+  // Read-only explainability model for the open drawer. Surfaces EXISTING resolver
+  // output (+ verbatim rawTags looked up by featureId) — it computes nothing new.
+  const explainModel = useMemo(() => {
+    if (explainTarget === "power" && dependency) {
+      const rawTags =
+        findFeatureRawTags(data.substations, dependency.featureId) ??
+        findFeatureRawTags(data.transmissionLines, dependency.featureId) ??
+        findFeatureRawTags(data.powerPlants, dependency.featureId);
+      return explainPower(dependency, rawTags);
+    }
+    if (explainTarget === "water" && waterDependency) {
+      return explainWater(
+        waterDependency,
+        findFeatureRawTags(data.water, waterDependency.featureId),
+      );
+    }
+    if (explainTarget === "flood" && floodRisk) {
+      return explainFlood(floodRisk);
+    }
+    return null;
+  }, [explainTarget, dependency, waterDependency, floodRisk, data]);
+
   const toggleLayer = useCallback((key: keyof LayerVisibility) => {
     setVisibility((v) => ({ ...v, [key]: !v[key] }));
   }, []);
@@ -161,7 +192,7 @@ export function PowerAtlasApp() {
             Power Atlas
           </h1>
           <p className="text-[11px] text-atlas-muted">
-            AI Infrastructure Site → Power Visualizer
+            AI data-center site → power, water &amp; risk visualizer
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -243,12 +274,24 @@ export function PowerAtlasApp() {
         </div>
 
         <aside className="w-80 shrink-0 space-y-3 overflow-y-auto border-l border-atlas-border p-3">
-          <PowerHUD dependency={dependency} campusSizeMW={campusSizeMW} />
+          <PowerHUD
+            dependency={dependency}
+            campusSizeMW={campusSizeMW}
+            onExplain={() => setExplainTarget("power")}
+          />
           {dependency && <DependencyWarnings warnings={dependency.warnings} />}
-          <WaterHUD dependency={waterDependency} coolingType={coolingType} />
-          <FloodHUD risk={floodRisk} />
+          <WaterHUD
+            dependency={waterDependency}
+            coolingType={coolingType}
+            onExplain={() => setExplainTarget("water")}
+          />
+          <FloodHUD risk={floodRisk} onExplain={() => setExplainTarget("flood")} />
         </aside>
       </div>
+
+      {explainModel && (
+        <ExplainDrawer model={explainModel} onClose={() => setExplainTarget(null)} />
+      )}
     </div>
   );
 }

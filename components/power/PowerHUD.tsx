@@ -27,9 +27,11 @@ function reasonLabel(code: string): string {
 export function PowerHUD({
   dependency,
   campusSizeMW,
+  onExplain,
 }: {
   dependency: CandidatePowerDependency | null;
   campusSizeMW: CampusSizeMW;
+  onExplain: () => void;
 }) {
   return (
     <Panel
@@ -104,6 +106,14 @@ export function PowerHUD({
               ))}
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={onExplain}
+            className="w-full rounded border border-atlas-border bg-atlas-panelRaised px-2 py-1.5 text-[11px] text-atlas-muted hover:text-atlas-text"
+          >
+            Explain this candidate ▸
+          </button>
         </div>
       )}
     </Panel>

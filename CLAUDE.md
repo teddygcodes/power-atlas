@@ -7,7 +7,7 @@ React 19 + TS, MapLibre + deck.gl, Vitest.
 
 ## Scope (current state)
 - **Built (v0.6):** power resolver, water resolver, cooling→water cascade, flood site-risk, construction-timeline reveal, 3D campus massing; lazy-loaded layers + repCoord geometry decoupling; 108 tests.
-- **Roadmap — do not add unprompted:** stress scenarios, site-screening, full digital-twin modes.
+- **Roadmap — do not add unprompted:** stress scenarios; **site-screening = intended v1.0** — reverse the resolvers to screen candidate areas across a grid, framed as SCREENING (narrows where to do diligence) NOT prescription (never "best site" / "build here"). Fresh-head design; the honesty framing is the hard part. Full digital-twin modes remain further out.
 - **Two resolver shapes now exist.** Power & water are *nearest-source dependency* resolvers (path drawn). Flood is a *site-risk constraint* (campus inside/near a zone via point-in-polygon; NO path). Don't force a new risk layer into the dependency shape, or vice-versa — pick the shape that matches the question.
 - **Cooling is a cross-layer input,** not a map layer: cooling type + MW → qualitative water-demand class feeding the water resolver. Flood does NOT interact with power/water/cooling.
 - **Timeline is a presentational display gate,** not analysis: `lib/timeline/phases.ts` `revealForPhase` gates which campus-build features (campus marker + the two candidate paths) render, AND-combined with the existing layer toggles. It calls NO resolver and recomputes nothing; at the `operational` phase the view equals the un-timelined map. Phases are ORDINAL only — never durations/dates/schedule.
@@ -47,6 +47,7 @@ React 19 + TS, MapLibre + deck.gl, Vitest.
 - `next build` failing with `MODULE_NOT_FOUND` for a `react-dom` server file = inconsistent `node_modules` from install churn → clean `npm ci`.
 - deck.gl + react-map-gl(maplibre) + maplibre-gl resolve cleanly (no pinning). `PathLayer.getPath` must return tuple `Position[]`, not widened `number[][]`.
 - CI runs Node 22; the "Node 20 actions deprecated" annotation is informational, not a failure.
+- **Heavy client deps (three/react-three-fiber) are code-split** via `dynamic(() => import(...), { ssr: false })` so they stay out of the initial/server bundle (the `/` route First Load JS didn't grow when 3D landed). For WebGL overlays keep them off the map's perf budget: `frameloop="demand"`, shared materials (one per color, disposed on unmount), clamped `dpr={[1,1.5]}`, no shadows/textures.
 
 ## Workflow
 - Build in phases; show real output at checkpoints (ingestion counts, resolver-on-fixture) before proceeding.

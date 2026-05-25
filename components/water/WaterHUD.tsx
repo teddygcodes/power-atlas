@@ -23,9 +23,11 @@ function typeLabel(t: string): string {
 export function WaterHUD({
   dependency,
   coolingType,
+  onExplain,
 }: {
   dependency: CandidateWaterDependency | null;
   coolingType: CoolingType;
+  onExplain: () => void;
 }) {
   return (
     <Panel
@@ -98,6 +100,14 @@ export function WaterHUD({
               ))}
             </ul>
           </div>
+
+          <button
+            type="button"
+            onClick={onExplain}
+            className="w-full rounded border border-atlas-border bg-atlas-panelRaised px-2 py-1.5 text-[11px] text-atlas-muted hover:text-atlas-text"
+          >
+            Explain this candidate ▸
+          </button>
         </div>
       )}
     </Panel>
