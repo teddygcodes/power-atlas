@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import type { PowerFeatureCollection, WaterFeatureCollection } from "../types/geojson";
 import { emptyFeatureCollection, emptyWaterFeatureCollection } from "../types/geojson";
-import type { CampusSizeMW } from "../types/scenario";
+import type { CampusSizeMW, CoolingType } from "../types/scenario";
 import { fetchFeatureCollection } from "../lib/geo/geojson";
 import { resolveCandidatePowerDependency } from "../lib/power/dependencyResolver";
 import { resolveCandidateWaterDependency } from "../lib/water/waterResolver";
@@ -39,6 +39,7 @@ interface Collections {
 
 export function PowerAtlasApp() {
   const [campusSizeMW, setCampusSizeMW] = useState<CampusSizeMW>(100);
+  const [coolingType, setCoolingType] = useState<CoolingType>("hybrid");
   const [campus, setCampus] = useState<[number, number]>(DEFAULT_CAMPUS);
   const [visibility, setVisibility] = useState<LayerVisibility>({
     substations: true,
@@ -85,22 +86,26 @@ export function PowerAtlasApp() {
     }
   }, [visibility]);
 
+  // One scenario feeds both resolvers. coolingType refines WATER demand only —
+  // the power resolver ignores it (cooling does not affect power in this model).
+  const scenario = useMemo(
+    () => ({ campusSizeMW, coordinates: campus, coolingType }),
+    [campusSizeMW, campus, coolingType],
+  );
+
   const dependency = useMemo(() => {
     if (!data.substations || !data.transmissionLines) return null;
     return resolveCandidatePowerDependency({
-      scenario: { campusSizeMW, coordinates: campus },
+      scenario,
       substations: data.substations,
       transmissionLines: data.transmissionLines,
     });
-  }, [data.substations, data.transmissionLines, campusSizeMW, campus]);
+  }, [data.substations, data.transmissionLines, scenario]);
 
   const waterDependency = useMemo(() => {
     if (!data.water) return null;
-    return resolveCandidateWaterDependency({
-      scenario: { campusSizeMW, coordinates: campus },
-      waterFeatures: data.water,
-    });
-  }, [data.water, campusSizeMW, campus]);
+    return resolveCandidateWaterDependency({ scenario, waterFeatures: data.water });
+  }, [data.water, scenario]);
 
   const toggleLayer = useCallback((key: keyof LayerVisibility) => {
     setVisibility((v) => ({ ...v, [key]: !v[key] }));
@@ -139,6 +144,8 @@ export function PowerAtlasApp() {
           <ScenarioPanel
             campusSizeMW={campusSizeMW}
             onSizeChange={setCampusSizeMW}
+            coolingType={coolingType}
+            onCoolingChange={setCoolingType}
             campus={campus}
             isDefaultCampus={isDefaultCampus}
             onReset={() => setCampus(DEFAULT_CAMPUS)}
@@ -183,7 +190,7 @@ export function PowerAtlasApp() {
         <aside className="w-80 shrink-0 space-y-3 overflow-y-auto border-l border-atlas-border p-3">
           <PowerHUD dependency={dependency} campusSizeMW={campusSizeMW} />
           {dependency && <DependencyWarnings warnings={dependency.warnings} />}
-          <WaterHUD dependency={waterDependency} />
+          <WaterHUD dependency={waterDependency} coolingType={coolingType} />
         </aside>
       </div>
     </div>

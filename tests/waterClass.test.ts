@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   classifyWater,
-  minPlausibleWaterClassForLoad,
+  minPlausibleWaterClassForDemand,
   isPlausibleWater,
 } from "../lib/water/waterClass";
 
@@ -17,25 +17,24 @@ describe("classifyWater", () => {
   });
 });
 
-describe("minPlausibleWaterClassForLoad / isPlausibleWater", () => {
-  it("accepts a minor stream for small loads (50/100 MW)", () => {
-    expect(minPlausibleWaterClassForLoad(50)).toBe("minor_stream");
-    expect(minPlausibleWaterClassForLoad(100)).toBe("minor_stream");
-    expect(isPlausibleWater("minor_stream", 100)).toBe(true);
-    expect(isPlausibleWater("reservoir", 100)).toBe(true);
-    expect(isPlausibleWater("major_river", 100)).toBe(true);
+describe("minPlausibleWaterClassForDemand / isPlausibleWater", () => {
+  it("accepts a minor stream for low/moderate demand", () => {
+    expect(minPlausibleWaterClassForDemand("low")).toBe("minor_stream");
+    expect(minPlausibleWaterClassForDemand("moderate")).toBe("minor_stream");
+    expect(isPlausibleWater("minor_stream", "moderate")).toBe(true);
+    expect(isPlausibleWater("reservoir", "moderate")).toBe(true);
+    expect(isPlausibleWater("major_river", "moderate")).toBe(true);
   });
 
-  it("requires reservoir-or-better for large loads (stream insufficient)", () => {
-    expect(minPlausibleWaterClassForLoad(250)).toBe("reservoir");
-    expect(minPlausibleWaterClassForLoad(500)).toBe("reservoir");
-    expect(isPlausibleWater("minor_stream", 500)).toBe(false);
-    expect(isPlausibleWater("reservoir", 500)).toBe(true);
-    expect(isPlausibleWater("major_river", 500)).toBe(true);
+  it("requires reservoir-or-better for high demand (stream insufficient)", () => {
+    expect(minPlausibleWaterClassForDemand("high")).toBe("reservoir");
+    expect(isPlausibleWater("minor_stream", "high")).toBe(false);
+    expect(isPlausibleWater("reservoir", "high")).toBe(true);
+    expect(isPlausibleWater("major_river", "high")).toBe(true);
   });
 
   it("treats unknown as not plausible (data gap, ranked by the resolver)", () => {
-    expect(isPlausibleWater("unknown", 50)).toBe(false);
-    expect(isPlausibleWater("unknown", 500)).toBe(false);
+    expect(isPlausibleWater("unknown", "low")).toBe(false);
+    expect(isPlausibleWater("unknown", "high")).toBe(false);
   });
 });

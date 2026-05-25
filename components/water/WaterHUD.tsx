@@ -1,5 +1,6 @@
 "use client";
 
+import type { CoolingType } from "../../types/scenario";
 import type { CandidateWaterDependency, WaterClass } from "../../types/water";
 import { Panel } from "../ui/Panel";
 import { Badge } from "../ui/Badge";
@@ -21,8 +22,10 @@ function typeLabel(t: string): string {
 
 export function WaterHUD({
   dependency,
+  coolingType,
 }: {
   dependency: CandidateWaterDependency | null;
+  coolingType: CoolingType;
 }) {
   return (
     <Panel
@@ -45,6 +48,12 @@ export function WaterHUD({
             <MetricRow
               label="Water Class"
               value={WATER_CLASS_LABEL[dependency.waterClass]}
+            />
+            <MetricRow label="Cooling Type" value={typeLabel(coolingType)} />
+            <MetricRow
+              label="Water Demand"
+              value={typeLabel(dependency.demandClass)}
+              title="Qualitative demand class from campus size + cooling — not a quantity"
             />
             <MetricRow label="Distance" value={`${dependency.distanceKm.toFixed(2)} km`} />
           </div>

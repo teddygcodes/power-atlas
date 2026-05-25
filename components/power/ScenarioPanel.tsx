@@ -1,19 +1,28 @@
 "use client";
 
-import type { CampusSizeMW } from "../../types/scenario";
+import type { CampusSizeMW, CoolingType } from "../../types/scenario";
 import { Panel } from "../ui/Panel";
 
 const SIZES: CampusSizeMW[] = [50, 100, 250, 500];
+const COOLING: { value: CoolingType; label: string }[] = [
+  { value: "air", label: "Air" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "evaporative", label: "Evap" },
+];
 
 export function ScenarioPanel({
   campusSizeMW,
   onSizeChange,
+  coolingType,
+  onCoolingChange,
   campus,
   isDefaultCampus,
   onReset,
 }: {
   campusSizeMW: CampusSizeMW;
   onSizeChange: (mw: CampusSizeMW) => void;
+  coolingType: CoolingType;
+  onCoolingChange: (c: CoolingType) => void;
   campus: [number, number];
   isDefaultCampus: boolean;
   onReset: () => void;
@@ -39,6 +48,29 @@ export function ScenarioPanel({
               </button>
             ))}
           </div>
+        </div>
+
+        <div>
+          <p className="mb-1.5 text-[11px] text-atlas-muted">Cooling type</p>
+          <div className="grid grid-cols-3 gap-1">
+            {COOLING.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => onCoolingChange(c.value)}
+                className={`rounded border px-2 py-1.5 text-xs transition-colors ${
+                  coolingType === c.value
+                    ? "border-signal-water/60 bg-signal-water/15 text-signal-water"
+                    : "border-atlas-border bg-atlas-panelRaised text-atlas-muted hover:text-atlas-text"
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-0.5 text-[10px] text-atlas-dim">
+            refines water demand only (not power)
+          </p>
         </div>
 
         <div>

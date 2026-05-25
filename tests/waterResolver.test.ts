@@ -3,7 +3,8 @@ import { resolveCandidateWaterDependency } from "../lib/water/waterResolver";
 import { getRepresentativeCoordinate, representativeCoordinate } from "../lib/geo/centroid";
 import { emptyWaterFeatureCollection } from "../types/geojson";
 import type { WaterFeature, WaterFeatureCollection } from "../types/geojson";
-import type { CampusSizeMW, DataCenterScenario } from "../types/scenario";
+import type { CampusSizeMW, CoolingType, DataCenterScenario } from "../types/scenario";
+import { DEMAND_ORDINAL } from "../lib/cooling/waterDemand";
 import sampleRaw from "./fixtures/georgia-demo-water-sample.json";
 
 const water = sampleRaw as unknown as WaterFeatureCollection;
@@ -124,5 +125,68 @@ describe("water resolver against REAL georgia-demo features", () => {
         waterFeatures: emptyWaterFeatureCollection(),
       }),
     ).toBeNull();
+  });
+});
+
+describe("cooling → water-demand cascade (REAL features)", () => {
+  const cooled = (
+    mw: CampusSizeMW,
+    coordinates: [number, number],
+    coolingType: CoolingType,
+  ): DataCenterScenario => ({ campusSizeMW: mw, coordinates, coolingType });
+
+  it("same campus + MW: air keeps the stream; evaporative flips it to insufficient", () => {
+    const air = resolveCandidateWaterDependency({
+      scenario: cooled(100, campusByStream, "air"),
+      waterFeatures: water,
+    })!;
+    const evap = resolveCandidateWaterDependency({
+      scenario: cooled(100, campusByStream, "evaporative"),
+      waterFeatures: water,
+    })!;
+
+    // air → low demand → the nearby stream is acceptable and picked
+    expect(air.featureId).toBe(stream.properties.id);
+    expect(air.demandClass).toBe("low");
+
+    // evaporative → high demand → stream insufficient → resolver climbs to the river
+    expect(evap.featureId).toBe(river.properties.id);
+    expect(evap.featureId).not.toBe(stream.properties.id);
+    expect(evap.demandClass).toBe("high");
+    expect(evap.reasonCodes).toContain("water_demand_high");
+    expect(evap.reasonCodes).toContain("cooling_evaporative");
+
+    // demand rose with cooling
+    expect(DEMAND_ORDINAL[evap.demandClass]).toBeGreaterThan(DEMAND_ORDINAL[air.demandClass]);
+  });
+
+  it("stream-only under evaporative: surfaced WITH insufficiency warning, not excluded", () => {
+    const dep = resolveCandidateWaterDependency({
+      scenario: cooled(100, campusByStream, "evaporative"),
+      waterFeatures: collection([stream]),
+    })!;
+    expect(dep.featureId).toBe(stream.properties.id);
+    expect(dep.warnings.some((w) => w.includes("likely insufficient"))).toBe(true);
+    expect(dep.capacityStatus).toBe("unknown");
+  });
+
+  it("emits NO consumption magnitude — demand is a class, capacity stays unknown", () => {
+    const dep = resolveCandidateWaterDependency({
+      scenario: cooled(500, campusByStream, "evaporative"),
+      waterFeatures: water,
+    })!;
+    expect(dep.capacityStatus).toBe("unknown");
+    expect(typeof dep.demandClass).toBe("string");
+    expect(JSON.stringify(dep)).not.toMatch(/gallon|MGD|liter|MW served|cubic|m3/i);
+  });
+
+  it("always carries the cooling-not-modeled caveat", () => {
+    const dep = resolveCandidateWaterDependency({
+      scenario: cooled(100, campusByStream, "air"),
+      waterFeatures: water,
+    })!;
+    expect(
+      dep.warnings.some((w) => w.includes("Cooling type sets a qualitative demand class only")),
+    ).toBe(true);
   });
 });

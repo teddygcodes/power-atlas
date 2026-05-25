@@ -18,6 +18,10 @@ export type WaterFeatureType =
 // Quality order: major_river > reservoir > minor_stream. "unknown" is a data gap.
 export type WaterClass = "major_river" | "reservoir" | "minor_stream" | "unknown";
 
+// Qualitative water-demand class derived from (campus MW + cooling type). This
+// is the resolver's demand signal — never a quantity. Order: low < moderate < high.
+export type WaterDemandClass = "low" | "moderate" | "high";
+
 export interface WaterFeatureProperties extends SourceMetadata {
   id: string;
   waterType: WaterFeatureType;
@@ -35,6 +39,7 @@ export interface CandidateWaterDependency {
   name?: string;
   distanceKm: number;
   waterClass: WaterClass;
+  demandClass: WaterDemandClass; // qualitative demand (MW + cooling) — never a quantity
   sourceConfidence: SourceConfidence;
   pathConfidence: "derived";
   capacityStatus: "unknown";

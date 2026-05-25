@@ -4,6 +4,7 @@ import type { CandidateWaterDependency, WaterClass } from "../../types/water";
 import { representativeCoordinate } from "../geo/centroid";
 import { haversineKm } from "../geo/distance";
 import { classifyWater, isPlausibleWater } from "./waterClass";
+import { waterDemandClass } from "../cooling/waterDemand";
 import { buildWaterWarnings } from "./waterWarnings";
 
 export interface ResolveWaterInput {
@@ -28,7 +29,11 @@ export function resolveCandidateWaterDependency(
 ): CandidateWaterDependency | null {
   const { scenario, waterFeatures } = input;
   const from = scenario.coordinates;
-  const mw = scenario.campusSizeMW;
+  // Demand input = MW + cooling (default hybrid reproduces the prior MW-only
+  // behavior). This is the ONLY change vs the pre-cooling resolver — the ranking,
+  // tiers, lowForLoad, and return shape below are unchanged.
+  const coolingType = scenario.coolingType ?? "hybrid";
+  const demandClass = waterDemandClass(scenario.campusSizeMW, coolingType);
 
   const ranked: RankedWater[] = [];
   for (const feature of waterFeatures.features) {
@@ -36,7 +41,7 @@ export function resolveCandidateWaterDependency(
     if (!coordinates) continue;
     const waterClass = classifyWater(feature.properties.waterType);
     const tier =
-      waterClass === "unknown" ? 1 : isPlausibleWater(waterClass, mw) ? 0 : 2;
+      waterClass === "unknown" ? 1 : isPlausibleWater(waterClass, demandClass) ? 0 : 2;
     ranked.push({
       feature,
       coordinates,
@@ -52,11 +57,13 @@ export function resolveCandidateWaterDependency(
   const top = ranked[0];
   const props = top.feature.properties;
   const lowForLoad =
-    top.waterClass !== "unknown" && !isPlausibleWater(top.waterClass, mw);
+    top.waterClass !== "unknown" && !isPlausibleWater(top.waterClass, demandClass);
 
   const reasonCodes: string[] = [
     "nearest_visible_water_source",
     `water_type_${top.waterClass}`,
+    `water_demand_${demandClass}`,
+    `cooling_${coolingType}`,
     "proximity_not_water_rights",
     "capacity_unknown",
   ];
@@ -67,11 +74,13 @@ export function resolveCandidateWaterDependency(
     name: props.name,
     distanceKm: Math.round(top.distanceKm * 1000) / 1000,
     waterClass: top.waterClass,
+    demandClass,
     sourceConfidence: props.sourceConfidence,
     pathConfidence: "derived",
     capacityStatus: "unknown",
     warnings: buildWaterWarnings({
-      campusSizeMW: mw,
+      demandClass,
+      coolingType,
       waterClass: top.waterClass,
       lowForLoad,
     }),
